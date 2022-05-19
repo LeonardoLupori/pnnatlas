@@ -69,7 +69,7 @@ layout = dbc.Container([
                 color='primary',
             )
         )
-    ]),
+    ], className = 'align-items-center'),
 
     # Second portion (single PNNs)
     dbc.Row([lf.makeSubtitle('Perineuronal Nets')]),
@@ -78,7 +78,7 @@ layout = dbc.Container([
     dbc.Row([lf.makeSubtitle('Diffuse Fluorescence')]),
     dbc.Row([
         dbc.Col(lf.makeDiffuseHistogramSelectionMenu(id, coarseDict, midDict, fineDict),
-            xs=12,lg=4
+            xs=12,lg=4, className='mt-5'
         ),
         dbc.Col(
             dbc.Spinner(
