@@ -6,24 +6,20 @@ import pandas as pd
 
 import layoutFunctions as lf
 import callbackFunctions as cf
-import AbaTool
 
 # ------------------------------------------------------------------------------
 # Initialize utility objects and useful functions
 # ------------------------------------------------------------------------------
 
-# Object for managing ABA area names and ontology
-A = AbaTool.Atlas()
-
-# Utility dict mapping area Ids to names
-nameMap = A.get_name_map()
-
-# id function that helps manage component id names. It preprends
+# id function that helps manage component id names. It pre-pends
 # the name of the page to a string so that writing ids specific for each page is easier 
 id = cf.id_factory('wfa')          
 
 # Full path of the data folder where to load raw data
 dataFolder = Path(__file__).parent.parent.absolute() / 'data'
+
+
+structuresDf = cf.loadStructuresDf(dataFolder/'structures.json')
 
 # ------------------------------------------------------------------------------
 # Load the necessary data
@@ -31,9 +27,9 @@ dataFolder = Path(__file__).parent.parent.absolute() / 'data'
 
 # Diffuse Fluorescence data for single areas
 # Naming is a shorthand for Wfa _ Diffuse _ Coarse/Mid/Fine
-w_d_c = pd.read_csv(dataFolder / 'wfa_diff_coarse.csv', header=[0,1], index_col=[0])
-w_d_m = pd.read_csv(dataFolder / 'wfa_diff_mid.csv', header=[0,1], index_col=[0,1])
-w_d_f = pd.read_csv(dataFolder / 'wfa_diff_fine.csv', header=[0,1], index_col=[0,1,2])
+w_d_c = pd.read_csv(dataFolder/'wfa'/'diffuse'/'wfa_diff_coarse.csv', header=[0,1], index_col=[0])
+w_d_m = pd.read_csv(dataFolder/'wfa'/'diffuse'/'wfa_diff_mid.csv', header=[0,1], index_col=[0,1])
+w_d_f = pd.read_csv(dataFolder/'wfa'/'diffuse'/'wfa_diff_fine.csv', header=[0,1], index_col=[0,1,2])
 
 # Data for the coronal slices heatmaps
 w_d_sliceList = cf.loadAllSlices(dataFolder / 'wfa' / 'coronalSlices_diffuse')
@@ -43,10 +39,10 @@ w_d_sliceList = cf.loadAllSlices(dataFolder / 'wfa' / 'coronalSlices_diffuse')
 # Perform some preprocessing
 # ------------------------------------------------------------------------------
 
-# Create lists of dictionaries {label:areaName, value=areaID} for populating dropdowns
-coarseDict = cf.dataFrame_to_labelDict(w_d_c,'coarse',nameMap)
-midDict = cf.dataFrame_to_labelDict(w_d_m,'mid',nameMap)
-fineDict = cf.dataFrame_to_labelDict(w_d_f,'fine',nameMap)
+# Create lists of dictionaries {label:areaName, value=areaID} for populating dropDowns
+coarseDict = cf.dataFrame_to_labelDict(w_d_c,'coarse',structuresDf)
+midDict = cf.dataFrame_to_labelDict(w_d_m,'mid',structuresDf)
+fineDict = cf.dataFrame_to_labelDict(w_d_f,'fine',structuresDf)
 
 
 
@@ -55,29 +51,11 @@ fineDict = cf.dataFrame_to_labelDict(w_d_f,'fine',nameMap)
 # ------------------------------------------------------------------------------
 layout = dbc.Container([
     lf.makeCitationOffCanvas(),
-    dbc.Row(lf.makeNavBar()),           # Navigation Bar
+    dbc.Row(lf.makeNavBar()),               # Navigation Bar
     dbc.Row(lf.makeWfaHeader()),            # Big header
-    
-    # First portion (Diffuse Fluorescence)
-    dbc.Row([lf.makeSubtitle('Diffuse WFA Fluorescence')]),
-    dbc.Row([
-        dbc.Col(lf.makeDiffuseHistogramSelectionMenu(id, coarseDict, midDict, fineDict),
-            xs=12,lg=4
-        ),
-        dbc.Col(
-            dbc.Spinner(
-                dcc.Graph(id=id('hist_diffuse')),
-                color='primary'
-            )
-        )
-    ]),
-    dbc.Row([lf.makeCollapsableTable(id)]),
 
-    # Second portion (single PNNs)
-    dbc.Row([lf.makeSubtitle('Perineuronal Nets')]),
-
-    # Third portion (anatomical explorer)
-    dbc.Row([lf.makeSubtitle('Anatomical explorer')]),
+    # First portion (anatomical explorer)
+    # dbc.Row([lf.makeSubtitle('Anatomical explorer')]),
     dbc.Row([
         dbc.Col(lf.makeAnatomicalExplorerSelectionMenu(id),
             xs=12,lg=3
@@ -92,6 +70,24 @@ layout = dbc.Container([
             )
         )
     ]),
+
+    # Second portion (single PNNs)
+    dbc.Row([lf.makeSubtitle('Perineuronal Nets')]),
+
+    # Third portion (Diffuse Fluorescence)
+    dbc.Row([lf.makeSubtitle('Diffuse Fluorescence')]),
+    dbc.Row([
+        dbc.Col(lf.makeDiffuseHistogramSelectionMenu(id, coarseDict, midDict, fineDict),
+            xs=12,lg=4
+        ),
+        dbc.Col(
+            dbc.Spinner(
+                dcc.Graph(id=id('hist_diffuse')),
+                color='primary'
+            )
+        )
+    ]),
+    dbc.Row([lf.makeCollapsableTable(id)]),
 
     dbc.Row([],style={"margin-top": "500px"}),
 ])
@@ -113,7 +109,7 @@ layout = dbc.Container([
 def updateHistogram(maj_sel,addC_sel,addM_sel,addF_sel, sortRegions):
     """Update the diffuse fluorescence histogram"""
     combinedDf = cf.combineDiffuseDataframes(maj_sel,addC_sel,addM_sel,addF_sel,w_d_c,w_d_m,w_d_f)
-    aggrDf = cf.aggregateFluoDataframe(combinedDf, A)
+    aggrDf = cf.aggregateFluoDataframe(combinedDf, structuresDf)
     if sortRegions:
         aggrDf = aggrDf.sort_values(by='mean',ascending=False)
 

@@ -1,3 +1,4 @@
+from matplotlib.pyplot import axis
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
@@ -41,20 +42,22 @@ def id_factory(page: str):
     return func
 
     
-def dataFrame_to_labelDict(df,indexName,nameMap):
-    """dataFrame_to_labelDict(df,indexName,nameMap)
+def dataFrame_to_labelDict(df,indexName,structuresDf):
+    """dataFrame_to_labelDict(df,indexName,structuresDf)
     
     Creates a list of dictionaries {label:areaName, value=areaID} that is used 
-    to populate dropdown menus in Dash"""
+    to populate dropdown menus in Dash
+    """
     # Get the IDs of all the areas in the dataframe at the correct index level
     regionIDs = df.index.get_level_values(indexName).to_list()
+    
     # Convert IDs to names
-    regionNames = [nameMap[x] for x in regionIDs]
+    regionNames = structuresDf.loc[regionIDs,'name'].tolist()
+    
     # Build a dictionary
     labelDict = [dict(label=k, value=v) for (k,v) in zip(regionNames,regionIDs)]
     # Sort the region names alphabetically
     labelDict = sorted(labelDict, key= lambda x: x['label'])
-    
     return labelDict
 
 
@@ -84,7 +87,7 @@ def emptyGraph():
 
 
 def emptyDiffuseDf():
-    emptyDf = pd.DataFrame(columns=["regionName","acronym","regionID","mean","sem","color"])
+    emptyDf = pd.DataFrame(columns=['regionName','acronym','regionID','mean','sem','color'])
     return emptyDf
 
 
@@ -136,18 +139,40 @@ def combineDiffuseDataframes(major_selection, addCoarse_selection, addMid_select
     return combinedDf
 
 
-def aggregateFluoDataframe(combinedDf, Atlas):
+def loadStructuresDf(structuresPath):
+    """
+    Loads the structures json as a DataFrame and performs some processing
+    to make it more usable.
+    It sets the region ID as the index of the df and creates a column 'rgb_plotly'
+    with the color of that region in the plotly format.
+    """
+    # Load the file
+    structuresDf = pd.read_json(structuresPath)
+    # Set the region ID as the index
+    structuresDf = structuresDf.set_index('id') 
+    # Create a column with the RGB color in the plotly format e.g., "rgb(100,200,8)"
+    rgb_to_strRgb = lambda x: f"rgb({x[0]},{x[1]},{x[2]})"
+    structuresDf['rgb_plotly'] = structuresDf['rgb_triplet'].apply(rgb_to_strRgb)
+
+    return structuresDf
+
+def aggregateFluoDataframe(combinedDf, structuresDf):
+    """
+    Takes a combined DataFrame of a multiple selection of regions and aggregate it
+    to calculate mean and SEM and add color, name and acronym information for all 
+    the regions
+    """
     if combinedDf.empty:
         return emptyDiffuseDf()
 
     # Aggregate data and calculate statistics and display options for all the areas 
     aggrDf = combinedDf.aggregate(func=['mean','sem'], axis=1)
-    aggrDf['regionName'] = Atlas.ids_to_names(aggrDf.index.tolist())
-    aggrDf['acronym'] = Atlas.ids_to_acronyms(aggrDf.index.tolist())
-    aggrDf['regionId'] = aggrDf.index.tolist()
-    aggrDf['color'] = Atlas.ids_to_colors(aggrDf.index.tolist(),color_model='rgb_plotly')
-    # Reorder the dataFrame columns
-    aggrDf = aggrDf[['regionName','acronym','regionId','mean','sem','color']]
+    # Merge combinedDf with some columns of the structures Df
+    aggrDf = aggrDf.join(structuresDf.loc[:,['acronym','name','rgb_plotly']], how='inner')
+    # Change column names
+    aggrDf = aggrDf.rename(dict(rgb_plotly='color', name='regionName'),axis=1)
+    # # Add column with the region ID
+    # aggrDf['regionId'] = aggrDf.index.tolist()
     return aggrDf
 
 
@@ -203,7 +228,7 @@ def makeAnatExplorerScatter():
     # Customize the general layout of the figure
     fig.update_layout(
         template='simple_white',
-        height=750,
+        height=650,
         showlegend=False
     )
 

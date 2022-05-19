@@ -18,5 +18,5 @@ This repo contains code and data for the web-app **pnnatlas.sns.it**
 - Dash 2.4.1  
 `pip install dash`
 
-- Dash Bootstrap Components
+- Dash Bootstrap Components  
 `pip install dash-bootstrap-components`

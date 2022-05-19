@@ -1,5 +1,5 @@
 from dash import Dash, dcc, html, Input, Output
-from pages import wfa, pv, interactions, genes
+from pages import wfa, interactions, genes#, pv
 
 
 app = Dash(__name__)
@@ -19,8 +19,8 @@ app.layout = html.Div([
 def display_page(pathname):
     if pathname == '/wfa':
         return wfa.layout
-    elif pathname == '/pv':
-        return pv.layout
+    # elif pathname == '/pv':
+    #     return pv.layout
     elif pathname == '/interactions':
         return interactions.layout
     elif pathname == '/genes':

@@ -53,7 +53,7 @@ def makeWfaHeader():
     # Main Title
     header = html.Div(
         dbc.Container([
-                html.H1("Perineuronal Nets", className="display-3"),
+                html.H1("Perineuronal Nets", className="display-4"),
                 html.P("An atlas for WFA-positive PNNs in the mouse brain",
                     className="lead",
                 ),
@@ -62,16 +62,9 @@ def makeWfaHeader():
                     html.A("Allen Brain Atlas", href="https://atlas.brain-map.org/", target="_blank"),
                     " Common Coordinate Framework version3 (CCFv3)."
                 ]),
-                html.P("We quantified these metrics"),
                 dbc.Row([
-                    dbc.Col([html.Div(["a"],className='rounded-3 bg-primary')],width=3),
-                    dbc.Col(["a"],width=3),
-                    dbc.Col(["a"],width=3),
-                    dbc.Col(["a"],width=3),
-                ]),
-
-
-                html.P(dbc.Button("Cite", id="btn_citeHeader",color="primary")),
+                    dbc.Col([dbc.Button("Cite", id="btn_citeHeader",color="primary")])
+                ],className="my-3")
             ],
             fluid=True,
             className="py-1 bg-light rounded-3",
