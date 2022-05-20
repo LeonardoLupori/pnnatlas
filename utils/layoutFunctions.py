@@ -73,6 +73,33 @@ def makeWfaHeader():
     )
     return header
 
+def makeInteractionHeader(idFunc):
+    """
+    Makes the header for the WFA page
+    """
+    # Main Title
+    header = html.Div(
+        dbc.Container([
+                html.H1("PNN-PV Interactions", className="display-4"),
+                html.P("Explore the relationship between perineuronal nets and PV-cells",
+                    className="lead",
+                ),
+                html.Hr(className="my-2"),
+                html.P(["Brain sections, stained with Weisteria Floribunda Agglutinin (WFA), were aligned to the ",
+                    html.A("Allen Brain Atlas", href="https://atlas.brain-map.org/", target="_blank"),
+                    " Common Coordinate Framework version3 (CCFv3)."
+                ]),
+                dbc.Row([
+                    dbc.Col([dbc.Button("Cite", id=idFunc("btn_citeHeader"),color="primary")])
+                ],className="my-3")
+            ],
+            fluid=True,
+            className="py-1 bg-light rounded-3",
+        ),
+        className="p-0 my-3",
+    )
+    return header
+
 def makePVHeader():
     """
     Makes the header for the PV page
@@ -99,6 +126,20 @@ def makePVHeader():
         className="p-0 my-3",
     )
     return header
+
+def makeInteractionSelectionMenu(idFunc, coarseDict):
+    """
+    Makes the left-side menu of the correlation plot in the interaction page
+    """
+    menu = html.Div(
+        dbc.Checklist(
+            id=idFunc('chklst_areasCorr'),
+            options=coarseDict,
+            value=[x['value'] for x in coarseDict]
+            )
+    )
+
+    return menu
 
 def makeDiffuseHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict):
     """

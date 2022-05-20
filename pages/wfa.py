@@ -18,7 +18,7 @@ id = cf.id_factory('wfa')
 # Full path of the data folder where to load raw data
 dataFolder = Path(__file__).parent.parent.absolute() / 'data'
 
-
+# Load the Atlas dataframe with all structures, acronyms, colors etc
 structuresDf = cf.loadStructuresDf(dataFolder/'structures.json')
 
 # ------------------------------------------------------------------------------
