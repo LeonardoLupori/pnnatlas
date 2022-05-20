@@ -171,8 +171,11 @@ def aggregateFluoDataframe(combinedDf, structuresDf):
     aggrDf = aggrDf.join(structuresDf.loc[:,['acronym','name','rgb_plotly']], how='inner')
     # Change column names
     aggrDf = aggrDf.rename(dict(rgb_plotly='color', name='regionName'),axis=1)
-    # # Add column with the region ID
-    # aggrDf['regionId'] = aggrDf.index.tolist()
+    # Add column with the region ID
+    aggrDf['regionId'] = aggrDf.index.tolist()
+    # Reorder columns (this df will be displayed as tabular data in the webapp)
+    aggrDf = aggrDf[['regionName','acronym','regionId','mean','sem','color']]
+
     return aggrDf
 
 
