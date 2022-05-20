@@ -4,8 +4,8 @@ import dash_bootstrap_components as dbc
 from pathlib import Path
 import pandas as pd
 
-import layoutFunctions as lf
-import callbackFunctions as cf
+from utils import layoutFunctions as lf
+from utils import callbackFunctions as cf
 
 # ------------------------------------------------------------------------------
 # Initialize utility objects and useful functions
