@@ -235,8 +235,13 @@ def makeAnatomicalExplorerSelectionMenu(idFunc):
         html.H6(["Select a dataset to show:"],className='my-1'),
         dcc.Dropdown(
             id=idFunc('drpD_anatomDataset'),
-            options = [{'label':'Diffuse Fluorescence','value':'diff'}],
-            value='diff',
+            options = [
+                {'label':'Diffuse Fluorescence','value':'diffuse'},
+                {'label':'PNN density','value':'density'},
+                {'label':'PNN intensity','value':'intensity'},
+                {'label':'PNN energy','value':'energy'},    
+                ],
+            value='diffuse',
             multi = False,
             clearable=False,
             className="my-1 mb-5"

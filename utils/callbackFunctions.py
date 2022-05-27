@@ -156,6 +156,7 @@ def loadStructuresDf(structuresPath):
 
     return structuresDf
 
+
 def aggregateFluoDataframe(combinedDf, structuresDf):
     """
     Takes a combined DataFrame of a multiple selection of regions and aggregate it
@@ -266,8 +267,7 @@ def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
     # Add the color column to the dataframe based on the colormap and vmin vmax
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
     mapper = cm.ScalarMappable(norm=norm, cmap=cmap)
-    # mapper = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-    rgb = mapper.to_rgba(dataFrame['mean_diffWfa'])
+    rgb = mapper.to_rgba(dataFrame['mean'])
     rgb = [f'rgb({x[0]},{x[1]},{x[2]})' for x in rgb]
     dataFrame['color'] = rgb
 
@@ -276,11 +276,14 @@ def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
 
     # Draw a shape for each area in the dataframe
     for _, area in dataFrame.iterrows():
+        # Do not draw Areas that have NaN as a mean value
+        if (np.isnan(area['mean'])) and (area['acronym']!='root'):
+            continue
 
         # Create and format the hover string of this area
         if area['acronym']!='root':
-            hoverString = ("<b>" + area['acronym'] + "</b>" + "<br>" + "<i>" + area['name'] + "</i>" + "<br>" +
-                f"Mean: {area['mean_diffWfa']:.3f}" + "<br>" + f"sem: {area['sem_diffWfa']:.3f}"
+            hoverString = ("<b>" + area['acronym'] + "</b>" + "<br>" + "<i>" + area['regionName'] + "</i>" + "<br>" +
+                f"Mean: {area['mean']:.3f}" + "<br>" + f"sem: {area['sem']:.3f}"
             )
         else:
             hoverString='root'
@@ -320,6 +323,12 @@ def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
 
     return fig
 
+
+def mergeCoordinatesAndData(coordDf, dataDf):
+    aggrData = dataDf.aggregate(func=['mean','sem'], axis=1)
+    mergedDf = coordDf.merge(aggrData,how='left',left_on='regionID',right_on='mid')
+
+    return mergedDf
 
 # Calculates the figure height based on the number of rows to display
 def calculateGraphHeight(numRows):

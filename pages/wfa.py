@@ -31,9 +31,14 @@ w_d_c = pd.read_csv(dataFolder/'wfa'/'diffuse'/'wfa_diff_coarse.csv', header=[0,
 w_d_m = pd.read_csv(dataFolder/'wfa'/'diffuse'/'wfa_diff_mid.csv', header=[0,1], index_col=[0,1])
 w_d_f = pd.read_csv(dataFolder/'wfa'/'diffuse'/'wfa_diff_fine.csv', header=[0,1], index_col=[0,1,2])
 
-# Data for the coronal slices heatmaps
-w_d_sliceList = cf.loadAllSlices(dataFolder / 'wfa' / 'coronalSlices_diffuse')
+# Cell Density data for single areas
 
+# Cell Intensity data for single areas
+
+# Cell Energy data for single areas
+
+# Coronal Slice Coordinates
+coronalCoordDfList = cf.loadAllSlices(dataFolder / 'coordinates')
 
 # ------------------------------------------------------------------------------
 # Perform some preprocessing
@@ -125,8 +130,23 @@ def updateHistogram(maj_sel,addC_sel,addM_sel,addF_sel, sortRegions):
     Input(component_id=id('slider_clims'),component_property='value'),
     Input(component_id=id('slider_ap'),component_property='value'),
 )
-def updateAnatomicalExplorer(fig, dataset, cmap, clims, apIdx):
-    fig = cf.redrawAnatExplorerScatter(fig, w_d_sliceList[apIdx], cmap, clims[0],clims[1])
+def updateAnatomicalExplorer(fig, datasetLabel, cmap, clims, apIdx):
+
+    # Select which dataset to show
+    if datasetLabel=='diffuse':
+        data = w_d_m
+    elif datasetLabel=='density':
+        pass
+        # data = w_den_m
+    elif datasetLabel=='intensity':
+        pass
+        # data = w_int_m
+    elif datasetLabel=='energy':
+        pass
+        # data = w_ene_m
+
+    df = cf.mergeCoordinatesAndData(coronalCoordDfList[apIdx], data)
+    fig = cf.redrawAnatExplorerScatter(fig, df, cmap, clims[0],clims[1])
     return fig
 
 @callback(
