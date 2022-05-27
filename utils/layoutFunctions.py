@@ -25,7 +25,7 @@ def makeNavBar():
         children=[
             dbc.NavItem(dbc.NavLink('WFA', href='/wfa')),
             dbc.NavItem(dbc.NavLink('PV', href='/pv')),
-            dbc.NavItem(dbc.NavLink('WFA-PV Interactions', href='/interactions')),
+            dbc.NavItem(dbc.NavLink('Interactions', href='/interactions')),
             dbc.NavItem(dbc.NavLink('Genes', href='/genes')),
             dbc.DropdownMenu(
                 children=[
@@ -127,17 +127,32 @@ def makePVHeader():
     )
     return header
 
-def makeInteractionSelectionMenu(idFunc, coarseDict):
+def makeAreasChecklist(idFunc,coarseDict):
+    checklist = dbc.Checklist(
+        id=idFunc('chklst_areasCorr'),
+        options=coarseDict,
+        value=[x['value'] for x in coarseDict],
+        inline=True,
+        className='ms-5'
+    )
+    return checklist
+
+def makeInteractionSelectionMenu(idFunc):
     """
     Makes the left-side menu of the correlation plot in the interaction page
     """
-    menu = html.Div(
-        dbc.Checklist(
-            id=idFunc('chklst_areasCorr'),
-            options=coarseDict,
-            value=[x['value'] for x in coarseDict]
-            )
-    )
+
+    ## X
+    # wfa o PV
+    # Dataset (diffuso, density ecc)
+    menu = html.Div([
+        dbc.Row([
+            html.Div([
+
+
+            ],className='my-3 bg-light rounded-3')
+        ]),
+    ])
 
     return menu
 

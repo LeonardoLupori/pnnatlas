@@ -54,12 +54,14 @@ layout = dbc.Container([
 
     dbc.Row([
         dbc.Col([
-            lf.makeInteractionSelectionMenu(id, coarseDict)
+            lf.makeInteractionSelectionMenu(id)
         ],xs=12,lg=3),
         dbc.Col([
+            
             dbc.Spinner([
                 dcc.Graph()
-            ],color='primary')
+            ],color='primary'),
+            lf.makeAreasChecklist(id, coarseDict),
         ])
     ]),
     dbc.Row([],style={"margin-top": "500px"}),
