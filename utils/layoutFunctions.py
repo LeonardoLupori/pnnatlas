@@ -1,3 +1,5 @@
+from cProfile import label
+from pydoc import classname
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 
@@ -11,15 +13,15 @@ def makeSubtitle(string):
     Makes a subtitle with a line underneath to divide sections
     """
     subtitle = html.Div([
-        html.H1(string,
-            className="h-1 my-3 fw-bolder"),
-        html.Hr(className="my-2")   
+        html.H2(string,
+            className="mt-2 mb-0 fw-bolder"),
+        html.Hr(className="my-0")   
     ])
     return subtitle
 
 def makeNavBar():
     """
-    # Makes the navigation bar
+    Makes the navigation bar
     """
     navbar = dbc.NavbarSimple(
         children=[
@@ -42,34 +44,31 @@ def makeNavBar():
         color='primary',
         fixed='top',
         dark=True,
+        style={'height':'40px'},
         className=''
     )
     return navbar
 
-def makeWfaHeader():
+def makeWfaHeader(idFunc):
     """
     Makes the header for the WFA page
     """
     # Main Title
     header = html.Div(
         dbc.Container([
-                html.H1("Perineuronal Nets", className="display-4"),
-                html.P("An atlas for WFA-positive PNNs in the mouse brain",
-                    className="lead",
-                ),
-                html.Hr(className="my-2"),
-                html.P(["Brain sections, stained with Weisteria Floribunda Agglutinin (WFA), were aligned to the ",
-                    html.A("Allen Brain Atlas", href="https://atlas.brain-map.org/", target="_blank"),
-                    " Common Coordinate Framework version3 (CCFv3)."
-                ]),
-                dbc.Row([
-                    dbc.Col([dbc.Button("Cite", id="btn_citeHeader",color="primary")])
-                ],className="my-3")
+            html.Div([
+                html.H2("Perineuronal Nets", className="display-4"),
+                dbc.Button("Cite", id=idFunc("btn_citeHeader"),color="success", outline=True)
+            ], className='d-flex justify-content-between align-items-center mb-0'),
+            
+            html.Hr(className="mt-0 mb-1"),
+            html.P("An atlas for WFA-positive PNNs in the mouse brain"
+            )
             ],
             fluid=True,
             className="py-1 bg-light rounded-3",
         ),
-        className="p-0 my-3",
+        className="p-0 my-1",
     )
     return header
 
@@ -80,23 +79,18 @@ def makeInteractionHeader(idFunc):
     # Main Title
     header = html.Div(
         dbc.Container([
-                html.H1("PNN-PV Interactions", className="display-4"),
-                html.P("Explore the relationship between perineuronal nets and PV-cells",
-                    className="lead",
-                ),
-                html.Hr(className="my-2"),
-                html.P(["Brain sections, stained with Weisteria Floribunda Agglutinin (WFA), were aligned to the ",
-                    html.A("Allen Brain Atlas", href="https://atlas.brain-map.org/", target="_blank"),
-                    " Common Coordinate Framework version3 (CCFv3)."
-                ]),
-                dbc.Row([
-                    dbc.Col([dbc.Button("Cite", id=idFunc("btn_citeHeader"),color="primary")])
-                ],className="my-3")
+            html.Div([
+                html.H2("Interactions", className="display-4"),
+                dbc.Button("Cite", id=idFunc("btn_citeHeader"),color="success", outline=True)
+                ], className='d-flex justify-content-between align-items-center mb-0'
+            ),
+            html.Hr(className="mt-0 mb-1"),
+            html.P("Explore the relationship between perineuronal nets and PV-cells"),  
             ],
             fluid=True,
             className="py-1 bg-light rounded-3",
         ),
-        className="p-0 my-3",
+        className="p-0 my-1",
     )
     return header
 
@@ -142,18 +136,72 @@ def makeInteractionSelectionMenu(idFunc):
     Makes the left-side menu of the correlation plot in the interaction page
     """
 
-    ## X
-    # wfa o PV
-    # Dataset (diffuso, density ecc)
+    # Create a list of dicts for the dropdown of WFA vs PV
+    wfaPvDictList = [{'label':'WFA', 'value':'wfa'},{'label':'Parvalbumin', 'value':'pv'}]
+
+    # Create a list of dicts for the dropdown of the different metrics
+    metricsDictList = [
+        {'label':'Diffuse Fluorescence','value':'diffuse'},
+        {'label':'Cell Density','value':'density'},
+        {'label':'Cell Intensity','value':'intensity'},
+        {'label':'Cell Energy','value':'energy'},
+    ]
+
+    
     menu = html.Div([
+
+        # X AXIS
         dbc.Row([
             html.Div([
+                html.H4("X axis", className='my-1 mt-2'),
+                html.H6("Select a staining", className='mt-3 mb-1'),
+                dcc.Dropdown(
+                    id=idFunc('drpD_xStaining'),
+                    options = wfaPvDictList,
+                    value='wfa',
+                    multi = False,
+                    clearable=False,
+                    className=''
+                ),
+                html.H6("Select a metric", className='mt-3 mb-1'),
+                dcc.Dropdown(
+                    id=idFunc('drpD_xMetric'),
+                    options = metricsDictList,
+                    value='diffuse',
+                    multi = False,
+                    clearable=False,
+                    className='mb-2'
+                ),
 
+            ],className='my-3 border border-light rounded-3')
+        ]),
 
-            ],className='my-3 bg-light rounded-3')
+        # Y AXIS
+        dbc.Row([
+            html.Div([
+                html.H4("Y axis", className='my-1 mt-2'),
+                html.H6("Select a staining", className='mt-3 mb-1'),
+                dcc.Dropdown(
+                    id=idFunc('drpD_yStaining'),
+                    options = wfaPvDictList,
+                    value='pv',
+                    multi = False,
+                    clearable=False,
+                    className=''
+                ),
+                html.H6("Select a metric", className='mt-3 mb-1'),
+                dcc.Dropdown(
+                    id=idFunc('drpD_yMetric'),
+                    options = metricsDictList,
+                    value='diffuse',
+                    multi = False,
+                    clearable=False,
+                    className='mb-2'
+                ),
+
+            ],className='my-3 border border-light rounded-3')
         ]),
     ])
-
     return menu
 
 def makeDiffuseHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict):
@@ -247,19 +295,29 @@ def makeAnatomicalExplorerSelectionMenu(idFunc):
     Makes the layout for the left-side selection menu of the anatomical explorer
     """
     menu = html.Div([
-        html.H6(["Select a dataset to show:"],className='my-1'),
-        dcc.Dropdown(
-            id=idFunc('drpD_anatomDataset'),
-            options = [
-                {'label':'Diffuse Fluorescence','value':'diffuse'},
-                {'label':'PNN density','value':'density'},
-                {'label':'PNN intensity','value':'intensity'},
-                {'label':'PNN energy','value':'energy'},    
-                ],
-            value='diffuse',
-            multi = False,
-            clearable=False,
-            className="my-1 mb-5"
+
+        html.H6(["Select a metric to show:"],className='my-1'),
+        html.Div([
+            html.Div([
+                dcc.Dropdown(
+                    id=idFunc('drpD_anatomDataset'),
+                    options=[
+                        {'label':'Diffuse Fluorescence','value':'diffuse'},
+                        {'label':'PNN density','value':'density'},
+                        {'label':'PNN intensity','value':'intensity'},
+                        {'label':'PNN energy','value':'energy'},
+                    ],
+                    value='diffuse',
+                    multi = False,
+                    clearable=False,
+                )],
+                style={'flex-grow':'1'},
+            ),
+            html.Div([
+                dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info'))], 
+            )],
+            className='mt-1 mb-3', 
+            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
         ),
 
         html.H6(["Colormap:"],className='my-1'),
@@ -308,7 +366,7 @@ def colormapDictListDropdown():
     ]
     return cmapDictList
 
-def makeCitationOffCanvas():
+def makeCitationOffCanvas(idFunc):
     """
     Makes the layout for the offcanvas menu for citations
     """
@@ -319,12 +377,94 @@ def makeCitationOffCanvas():
             html.Br(),
             "Citation info"
         ]),
-        id="offCanv_cite",
+        id=idFunc("offCanv_cite"),
         title="Cite us",
         is_open=False,
     )
     return offcanvas
 
+def makeMetricInfoModal(idFunc):
+
+    diffuseCard = dbc.Card([
+        dbc.CardBody([
+            html.H5("Diffuse Fluorescence (A.U.)", className="card-title primary"),
+            html.P(html.I("'How much WFA staining is there?'")),
+            html.Hr(className="mb-1"),
+            html.P(["For each mouse, we calculate the ", html.B("average fluorescence"), 
+                " intensity across all the pixels belonging to a brain region. " + 
+                "Then, we divide this value by the average fluorescence intensity " + 
+                "of the entire brain of this mouse."],
+                className="card-text")]
+        )],
+        style={'height':'100%'},
+        outline=True,
+        color='info',
+    )
+
+    densityCard = dbc.Card([
+        dbc.CardBody([
+            html.H5(["Cell Density (cells/mm", html.Sup(2) ,")"], className="card-title"),
+            html.P(html.I("'How many cells are there?'")),
+            html.Hr(className="mb-1"),
+            html.P(["For each mouse, we calculate the ", html.B(["number of cells per mm",html.Sup(2)]), 
+                " In a brain region. " + 
+                "This value is the cell density."],
+                className="card-text")]
+        )],
+        style={'height':'100%'},
+        outline=True,
+        color='info',
+    )
+
+    intensityCard = dbc.Card([
+        dbc.CardBody([
+            html.H5("Cell Intensity (A.U.)", className="card-title"),
+            html.P(html.I("'How intense are the cells here?'")),
+            html.Hr(className="mb-1"),
+            html.P(["For each cell, we segment pixels belonging to the cell with a ", 
+                html.B("random forest classifier."), " The average intensity value is ",
+                "the intensity of that cell.", html.Br(), "For each brain region, we compute the ",
+                "average of the intensity of all the cells in that region and then we ",
+                "normalize this value by dividing it by the average intensity of",
+                " the entire brain for this mouse."],
+                className="card-text")],        
+        )],
+        style={'height':'100%'},
+        outline=True,
+        color='info'
+    )
+
+    energyCard = dbc.Card([
+        dbc.CardBody([
+            html.H5("Cell Energy (A.U.)", className="card-title"),
+            html.P(html.I("'What's the overall prevalence of these cells here?'")),
+            html.Hr(className="mb-1"),
+            html.P(["A composite metric. ", html.Br(), 
+                "To be defined!!"],
+                className="card-text")]
+        )],
+        style={'height':'100%'},
+        outline=True,
+        color='info',
+    )
+
+    modal = dbc.Modal([
+            dbc.ModalHeader(dbc.ModalTitle("Metrics analyzed")),
+            dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col([diffuseCard], width=6),
+                    dbc.Col([densityCard]),
+                ], className=''),
+                dbc.Row([
+                    dbc.Col([intensityCard], width=6),
+                    dbc.Col([energyCard]),
+                ], className='my-3')]
+        )],
+        size='lg',
+        id=idFunc('modal_info')
+    )
+
+    return modal
 
 # ------------------------------------------------------------------------------
 # 

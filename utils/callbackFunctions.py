@@ -232,8 +232,15 @@ def makeAnatExplorerScatter():
     # Customize the general layout of the figure
     fig.update_layout(
         template='simple_white',
-        height=650,
-        showlegend=False
+        height=550,
+        showlegend=False,
+        margin=dict(
+                l=2,
+                r=2,
+                b=2,
+                t=2,
+                pad=0
+            )
     )
 
     # X-axis
@@ -253,6 +260,41 @@ def makeAnatExplorerScatter():
         scaleratio = 1,         # Makes the scale of the axis equal
         autorange="reversed"    # Since the atlas is upside-down
     )
+
+    return fig
+
+
+def makeInteractionScatter():
+    """
+    Draws the Scatter plot in the interaction page for the first time so that 
+    boring features of the figure layout do not have to be recomputed every time 
+    the plot updates.
+
+    This function is called only at graph creation while the graph update is 
+    performed through the function redrawInteractionScatter()
+    """
+    fig = go.Figure()
+
+    fig.update_layout(
+        template='none',
+        height=650,
+        legend=dict(
+            orientation="v",
+        ),
+        font=dict(
+            # family='Arial',
+            size=14,
+        ),
+        margin=dict(
+                t=30,
+            )
+    )
+
+    fig.update_yaxes(
+        scaleanchor = "x",  
+        scaleratio = 1,
+    )
+
 
     return fig
 
@@ -330,8 +372,11 @@ def mergeCoordinatesAndData(coordDf, dataDf):
 
     return mergedDf
 
-# Calculates the figure height based on the number of rows to display
+
 def calculateGraphHeight(numRows):
+    """
+    Calculates the figure height based on the number of rows to display
+    """
     if numRows<3:
         height = numRows*200
     elif numRows<5:
@@ -347,8 +392,7 @@ def calculateGraphHeight(numRows):
     return height
 
 
-
-def loadAllSlices(folderPath):
+def loadAllSlices(folderPath:str):
     """
     loadAllSlices(folderPath)
 
@@ -362,3 +406,125 @@ def loadAllSlices(folderPath):
         dfList.append(df)
     return dfList
 
+
+def loadData(dataPath:str, staining:str = '', metric:str = '', resolution:str = ''):
+    """
+    Returns a dictionary in the form:
+        - key: filename
+        - value: dataFrame
+    where each available dataset is referenced by its filename (no extension)
+    """
+
+    # Build the list of files that have to be loaded
+    fileList = os.listdir(dataPath)
+
+    # Filter the list of file based on the user's request
+    if staining:
+        fileList = [f  for f in fileList if staining in f]
+    if metric:
+        fileList = [f  for f in fileList if metric in f]
+    if resolution:
+        fileList = [f  for f in fileList if resolution in f]
+
+    # Load the requested files
+    keys = []
+    values = []
+    for f in fileList:
+        keys.append(os.path.splitext(f)[0])
+
+        if 'coarse' in f:
+            index_col = [0]
+        elif 'mid' in f:
+            index_col = [0,1]
+        elif 'fine' in f:
+            index_col = [0,1,2]
+
+        df = pd.read_csv(os.path.join(dataPath,f), header=[0,1], index_col=index_col)
+        values.append(df)
+
+    # Assemble all files in a dict
+    resultDict = {k:v for (k,v) in zip(keys,values)}
+
+    return resultDict
+
+
+def selectData(dataDict, staining, metric, resolution):
+    for d in dataDict.keys():
+        if d == f"{staining}_{metric}_{resolution}":
+            return dataDict[d]
+    return []
+
+# ------------------------------------------------------------------------------
+# Page-Specific Functions
+# ------------------------------------------------------------------------------
+
+
+# Interactions
+# ------------------------------------------------------------------------------
+def intScattAggregateData(structuresDf, xData, yData):
+    
+    xData = xData.aggregate(func=['mean'], axis=1)
+    yData = yData.aggregate(func=['mean'], axis=1)
+    structuresDf = structuresDf[['name','acronym','rgb_plotly']]
+
+    merged = xData.join(yData, how='inner', lsuffix='_x', rsuffix='_y')
+    merged = merged.join(structuresDf, on='mid', how='left')
+    merged = merged.drop(1009, level='mid')
+
+    # Z-score
+    means = merged[['mean_x','mean_y']]
+    means = (means - means.mean()).divide(means.std())
+    merged[['mean_x','mean_y']] = means
+
+    return merged
+
+
+def redrawIntScatter(fig, aggrDf, structDf, xStaining,xMetric,yStaining,yMetric):
+
+    # Convert back the figure in a go object
+    fig = go.Figure(fig)
+    # remove all present data
+    fig.data = []
+
+    # Draw a Scatter trace for each area in the dataFrame
+    for coarse, new_df in aggrDf.groupby(level='coarse'):
+        thisTrace = go.Scatter(
+            x = new_df['mean_x'], y = new_df['mean_y'],
+            name = structDf.loc[coarse]['name'],
+            marker_color = new_df['rgb_plotly'],
+            mode='markers',
+            marker = dict(
+                size=13,
+                line_width=1,
+                opacity=0.85,
+            ),
+            customdata  = np.stack((new_df['name'], new_df['acronym']), axis=-1),
+            hovertemplate= "<b>%{customdata[1]}</b>" + "<br>" +
+                "<i>%{customdata[0]}</i>" + "<br>" + 
+                f"{structDf.loc[coarse]['name']}" + "<br>" +
+                f"<b>{xStaining}-{xMetric}</b>:" "%{x:.3f}" + "<br>" + 
+                f"<b>{yStaining}-{yMetric}</b>:" + "%{y:.3f}" +
+                "<extra></extra>",
+            
+        )
+        fig.add_trace(thisTrace)
+
+    # Sort traces alphabetically
+    fig.data = sorted(fig.data, key=lambda d: d['name']) 
+
+    fig.update_xaxes(
+        title=f"{xStaining.upper()} - {xMetric} - (z-score)"
+    )
+    fig.update_yaxes(
+        title=f"{yStaining.upper()} - {yMetric} - (z-score)"
+    )
+
+    
+
+
+    return fig
+
+
+    hoverString = ("<b>" + area['acronym'] + "</b>" + "<br>" + "<i>" + area['regionName'] + "</i>" + "<br>" +
+                f"Mean: {area['mean']:.3f}" + "<br>" + f"sem: {area['sem']:.3f}"
+            )

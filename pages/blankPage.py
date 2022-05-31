@@ -13,7 +13,7 @@ layout = html.Div([
                     style={"opacity": 0.8},
                 )
             ]),
-            ],width={'size':8,'offset':2}
+            ],width={'size':4,'offset':4}
         )
     ], className='my-5'),
 

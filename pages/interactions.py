@@ -3,7 +3,6 @@ import dash_bootstrap_components as dbc
 
 from pathlib import Path
 import pandas as pd
-from pyparsing import col
 
 from utils import layoutFunctions as lf
 from utils import callbackFunctions as cf
@@ -27,18 +26,15 @@ structuresDf = cf.loadStructuresDf(dataFolder/'structures.json')
 # ------------------------------------------------------------------------------
 
 # Diffuse Fluorescence data for single areas
-# Naming is a shorthand for Wfa _ Diffuse _ Coarse/Mid/Fine
-w_d_c = pd.read_csv(dataFolder/'wfa'/'diffuse'/'wfa_diff_coarse.csv', header=[0,1], index_col=[0])
-w_d_m = pd.read_csv(dataFolder/'wfa'/'diffuse'/'wfa_diff_mid.csv', header=[0,1], index_col=[0,1])
-w_d_f = pd.read_csv(dataFolder/'wfa'/'diffuse'/'wfa_diff_fine.csv', header=[0,1], index_col=[0,1,2])
+D = cf.loadData(dataFolder/'fluorescence', resolution='mid')
 
 
 # ------------------------------------------------------------------------------
 # Perform some preprocessing
 # ------------------------------------------------------------------------------
 
-# Create lists of dictionaries {label:areaName, value=areaID} for populating dropDowns
-coarseDict = cf.dataFrame_to_labelDict(w_d_c,'coarse',structuresDf)
+# Create lists of dictionaries {label:areaName, value=areaID}
+# coarseDict = cf.dataFrame_to_labelDict(D['wfa_diffuse_coarse'],'coarse',structuresDf)
 
 
 # ------------------------------------------------------------------------------
@@ -47,7 +43,7 @@ coarseDict = cf.dataFrame_to_labelDict(w_d_c,'coarse',structuresDf)
 
 
 layout = dbc.Container([
-    lf.makeCitationOffCanvas(),
+    lf.makeCitationOffCanvas(id),
     dbc.Row(lf.makeNavBar()),               # Navigation Bar
     dbc.Row(lf.makeInteractionHeader(id)),            # Big header
 
@@ -58,11 +54,44 @@ layout = dbc.Container([
         ],xs=12,lg=3),
         dbc.Col([
             
-            dbc.Spinner([
-                dcc.Graph()
-            ],color='primary'),
-            lf.makeAreasChecklist(id, coarseDict),
+            dbc.Spinner(
+                dcc.Graph(
+                    figure=cf.makeInteractionScatter(),
+                    id=id('scatter'),
+                ),color='primary'
+            ),
+            # lf.makeAreasChecklist(id, coarseDict),
         ])
-    ]),
+    ], className = 'align-items-center'),
     dbc.Row([],style={"margin-top": "500px"}),
 ])
+
+
+
+@callback(
+    Output(component_id=id('scatter'), component_property='figure'),
+    State(component_id=id('scatter'), component_property='figure'),
+    Input(component_id=id('drpD_xStaining'), component_property='value'),
+    Input(component_id=id('drpD_xMetric'), component_property='value'),
+    Input(component_id=id('drpD_yStaining'), component_property='value'),
+    Input(component_id=id('drpD_yMetric'), component_property='value'),
+)
+def updateScatter(fig, xStaining,xMetric,yStaining,yMetric):    
+    xData = cf.selectData(D, xStaining, xMetric, 'mid')
+    yData = cf.selectData(D, yStaining, yMetric, 'mid')
+    aggrDf = cf.intScattAggregateData(structuresDf, xData, yData)
+
+    fig = cf.redrawIntScatter(fig, aggrDf, structuresDf, xStaining,xMetric,yStaining,yMetric)
+
+    return fig
+
+@callback(
+    Output(component_id=id('offCanv_cite'), component_property='is_open'),
+    Input(component_id=id('btn_citeHeader'),component_property='n_clicks'),
+    State(component_id=id('offCanv_cite'), component_property='is_open'),
+    prevent_initial_call=True
+)
+def invertCiteMenuVisibility(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open

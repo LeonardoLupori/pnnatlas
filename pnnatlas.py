@@ -1,9 +1,11 @@
 from dash import Dash, dcc, html, Input, Output
+import dash_bootstrap_components as dbc
 from pages import wfa, interactions, genes, blankPage #, pv
 
 
 app = Dash(__name__,
     title="PNN Atlas",
+    external_stylesheets=[dbc.icons.FONT_AWESOME]
 )
 
 app.layout = html.Div([
