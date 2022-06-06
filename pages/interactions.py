@@ -47,7 +47,7 @@ layout = dbc.Container([
     dbc.Row(lf.makeNavBar()),               # Navigation Bar
     dbc.Row(lf.makeInteractionHeader(id)),            # Big header
 
-
+    #
     dbc.Row([
         dbc.Col([
             lf.makeInteractionSelectionMenu(id)
@@ -63,6 +63,10 @@ layout = dbc.Container([
             # lf.makeAreasChecklist(id, coarseDict),
         ])
     ], className = 'align-items-center'),
+
+
+
+
     dbc.Row([],style={"margin-top": "500px"}),
 ])
 
