@@ -209,13 +209,37 @@ def makeDiffuseHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict):
     Makes the left-side menu with dropdowns for the diffuse fluorescence histogram,
     """
     menu = html.Div([
+        html.H6(["Select a metric to show:"],className='my-1'),
+
+        html.Div([
+            html.Div([
+                dcc.Dropdown(
+                    id=idFunc('drpD_histogMetric'),
+                    options=[
+                        {'label':'Diffuse Fluorescence','value':'diffuse'},
+                        {'label':'PNN density','value':'density'},
+                        {'label':'PNN intensity','value':'intensity'},
+                        {'label':'PNN energy','value':'energy'},
+                    ],
+                    value='diffuse',
+                    multi = False,
+                    clearable=False,
+                )],
+                style={'flex-grow':'1'},
+            ),
+            html.Div([
+                dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info'))], 
+            )],
+            className='mt-1 mb-5', 
+            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+        ),
         html.H6(["Select a major brain subdivision:"],className='my-1'),
         dcc.Dropdown(
             id=idFunc('drpD_majorSubd'),
             options = coarseDict,
             value=315, # Defaults to Isocortex
             multi = False,
-            className='my-1 mb-5'
+            className='my-1 mb-3'
         ),
         html.H6(["Add ",html.B("coarse-ontology")," region(s):"], className='my-1'),
         html.Div([
@@ -375,8 +399,33 @@ def makeCitationOffCanvas(idFunc):
             "If you found this atlas to be useful in your research, please consider ", 
             html.B("citing us."),
             html.Br(),
-            "Citation info"
+            dbc.Card(
+            [
+                dbc.CardImg(
+                    src="/assets/atlas_bg.jpg",
+                    top=True,
+                    style={"opacity": 0.2},
+                ),
+                dbc.CardImgOverlay(
+                    dbc.CardBody(
+                        [
+                            html.H4("BioRxiv", className="card-title"),
+                            html.P(
+                                "Check out our preprint here!",
+                                className="card-text",
+                            ),
+                            dcc.Link([dbc.Button("Go to BioRxiv", color="primary")],
+                                href="https://www.biorxiv.org/content/10.1101/2023.01.24.525313",
+                                target="_blank"),
+                            
+                        ],
+                    ),
+                ),
+            ],
+            style={"width": "18rem"},className='mt-5'
+        )
         ]),
+        
         id=idFunc("offCanv_cite"),
         title="Cite us",
         is_open=False,
@@ -392,8 +441,8 @@ def makeMetricInfoModal(idFunc):
             html.Hr(className="mb-1"),
             html.P(["For each mouse, we calculate the ", html.B("average fluorescence"), 
                 " intensity across all the pixels belonging to a brain region. " + 
-                "Then, we divide this value by the average fluorescence intensity " + 
-                "of the entire brain of this mouse."],
+                "Then, we normalize this value dividing it by the average fluorescence intensity " + 
+                "of the entire brain."],
                 className="card-text")]
         )],
         style={'height':'100%'},
@@ -421,12 +470,9 @@ def makeMetricInfoModal(idFunc):
             html.H5("Cell Intensity (A.U.)", className="card-title"),
             html.P(html.I("'How intense are the cells here?'")),
             html.Hr(className="mb-1"),
-            html.P(["For each cell, we segment pixels belonging to the cell with a ", 
-                html.B("random forest classifier."), " The average intensity value is ",
-                "the intensity of that cell.", html.Br(), "For each brain region, we compute the ",
-                "average of the intensity of all the cells in that region and then we ",
-                "normalize this value by dividing it by the average intensity of",
-                " the entire brain for this mouse."],
+            html.P(["For each cell, we measure the average pixel intesity value (", html.I(["range: 0-1"]), ") of ",
+                "all pixels belonging to that cell.", html.Br(), "For each brain region, we compute the ",
+                "average of the intensity of all the cells in that region."],
                 className="card-text")],        
         )],
         style={'height':'100%'},
@@ -439,8 +485,10 @@ def makeMetricInfoModal(idFunc):
             html.H5("Cell Energy (A.U.)", className="card-title"),
             html.P(html.I("'What's the overall prevalence of these cells here?'")),
             html.Hr(className="mb-1"),
-            html.P(["A composite metric. ", html.Br(), 
-                "To be defined!!"],
+            html.P(["Can be thought of as a measure of cell density, weighted by intensity. ",html.Br(),
+                "For each region, energy is defined as the sum of the cell intensity ",
+                "of all the cells in that region, divided by the total surface area ",
+                "Then, we normalize this value dividing it by the energy of the entire brain."],
                 className="card-text")]
         )],
         style={'height':'100%'},

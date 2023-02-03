@@ -9,7 +9,6 @@
 
 # Image files
 *.svg
-*.png
 *.jpg
 *.tif
 *.gif

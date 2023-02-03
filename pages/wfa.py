@@ -60,6 +60,7 @@ layout = dbc.Container([
                 dcc.Graph(
                     figure=cf.makeAnatExplorerScatter(),
                     id=id('scatterSlice'),
+                    config= {'displaylogo': False}
                 ),
                 color='primary',
             )
@@ -74,7 +75,7 @@ layout = dbc.Container([
         ),
         dbc.Col(
             dbc.Spinner(
-                dcc.Graph(id=id('hist_diffuse')),
+                dcc.Graph(id=id('hist_diffuse'), config={'displaylogo':False}),
                 color='primary'
             )
         )
