@@ -86,9 +86,15 @@ def emptyGraph():
     return figure
 
 
-def emptyDiffuseDf():
+def emptyMetricsDf():
     emptyDf = pd.DataFrame(columns=['regionName','acronym','regionID','mean','sem','color'])
     return emptyDf
+
+
+def combineMetricsDataframes(major_selection, addCoarse_selection, addMid_selection, #
+    addFine_selection, coarseDf, midDf, fineDf):
+
+    pass
 
 
 def combineDiffuseDataframes(major_selection, addCoarse_selection, addMid_selection, addFine_selection,
@@ -99,7 +105,7 @@ def combineDiffuseDataframes(major_selection, addCoarse_selection, addMid_select
     Takes the user selection on the dropdown menus and returns a combined dataframe
     with all the selected areas on each row.
     """
-    emptyDf = emptyDiffuseDf()
+    emptyDf = emptyMetricsDf()
 
     # Dataframe with all the regions in the selected major subdivision
     if major_selection:
@@ -164,7 +170,7 @@ def aggregateFluoDataframe(combinedDf, structuresDf):
     the regions
     """
     if combinedDf.empty:
-        return emptyDiffuseDf()
+        return emptyMetricsDf()
 
     # Aggregate data and calculate statistics and display options for all the areas 
     aggrDf = combinedDf.aggregate(func=['mean','sem'], axis=1)
@@ -180,7 +186,7 @@ def aggregateFluoDataframe(combinedDf, structuresDf):
     return aggrDf
 
 
-def diffuseFluoHistogram(aggrDf):
+def diffuseFluoHistogram(aggrDf, selMetric='diffuseFluo', staining='wfa'):
 
     # Return an empty graph with a warning if no regions are selected
     if aggrDf.empty:
@@ -204,9 +210,25 @@ def diffuseFluoHistogram(aggrDf):
             'sem':':.3f'},
         )
 
+    # Determine the label for the x axis based on the staining and metric selected
+    if staining == 'wfa':
+        switchName = {
+            'diffuseFluo': 'WFA diffuse intensity (A.U.)',
+            'energy': 'PNN Energy (A.U.)',
+            'intensity': 'PNN Intensity (A.U.)',
+            'density': 'PNN Density (PNNs/mm^2)'
+        }
+    elif staining == 'pv':
+        switchName = {
+            'diffuseFluo': 'PV diffuse intensity (A.U.)',
+            'energy': 'PV Energy (A.U.)',
+            'intensity': 'PV Intensity (A.U.)',
+            'density': 'PV Density (cells/mm^2)'
+        }
+
     fig.update_layout(
         font_family="arial",
-        xaxis_title="WFA diffuse intensity (A.U.)",
+        xaxis_title=switchName[selMetric],
         yaxis_title="",
         showlegend=False,
         height= calculateGraphHeight(aggrDf.shape[0]),
@@ -232,7 +254,7 @@ def makeAnatExplorerScatter():
     # Customize the general layout of the figure
     fig.update_layout(
         template='simple_white',
-        height=550,
+        height=500,
         showlegend=False,
         margin=dict(
                 l=2,
@@ -310,6 +332,7 @@ def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
     mapper = cm.ScalarMappable(norm=norm, cmap=cmap)
     rgb = mapper.to_rgba(dataFrame['mean'])
+    rgb[rgb == 1] = 0.999
     rgb = [f'rgb({x[0]},{x[1]},{x[2]})' for x in rgb]
     dataFrame['color'] = rgb
 
@@ -325,7 +348,7 @@ def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
         # Create and format the hover string of this area
         if area['acronym']!='root':
             hoverString = ("<b>" + area['acronym'] + "</b>" + "<br>" + "<i>" + area['regionName'] + "</i>" + "<br>" +
-                f"Mean: {area['mean']:.3f}" + "<br>" + f"sem: {area['sem']:.3f}"
+                f"Mean: {area['mean']:.3f}" + "<br>" + f"SEM: {area['sem']:.3f}"
             )
         else:
             hoverString='root'
@@ -363,6 +386,26 @@ def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
     [newData.insert(0,newData.pop(x)) for x in idx]
     fig['data'] = newData
 
+    # Somehow here fig is just a dict and not a go.Figure object so here we reinitialize it 
+    # as an object
+    fig = go.Figure({'data':fig['data'], 'layout':fig['layout']})
+
+    # Add the colorbar
+    colorbar_trace  = go.Scatter(
+        x=[None],
+        y=[None],
+        mode='markers',
+        marker=dict(
+            colorscale=cmap, 
+            showscale=True,
+            cmin=vmin,
+            cmax=vmax,
+            colorbar=dict(thickness=10, tickvals=[vmin, vmax], ticktext=[f'{vmin}', f'{vmax}'], outlinewidth=0, ypad=200)
+        ),
+        hoverinfo='none'
+    )
+    fig.add_trace(colorbar_trace)
+
     return fig
 
 
@@ -392,6 +435,41 @@ def calculateGraphHeight(numRows):
     return height
 
 
+def getClimsAnatomicalExplorer(selMetric, staining='wfa'):
+    """
+    Based on the selected metric this function returns reasonable default values
+    to use to set various properties of slider for min and max in the anatomical explorer
+    """
+    if staining =='wfa':
+        if selMetric=='density':
+            min = 0
+            max = 120
+        elif selMetric=='intensity':
+            min = 0
+            max = 0.7
+        elif selMetric=='energy':
+            min = 0
+            max = 2.5
+        elif selMetric=='diffuseFluo':
+            min = 0
+            max = 2.3
+    elif staining == 'pv':
+        if selMetric=='density':
+            min = 0
+            max = 200
+        elif selMetric=='intensity':
+            min = 0
+            max = 0.7
+        elif selMetric=='energy':
+            min = 0
+            max = 3
+        elif selMetric=='diffuseFluo':
+            min = 0
+            max = 2.2
+
+    return min,max
+
+
 def loadAllSlices(folderPath:str):
     """
     loadAllSlices(folderPath)
@@ -407,52 +485,12 @@ def loadAllSlices(folderPath:str):
     return dfList
 
 
-def loadData(dataPath:str, staining:str = '', metric:str = '', resolution:str = ''):
-    """
-    Returns a dictionary in the form:
-        - key: filename
-        - value: dataFrame
-    where each available dataset is referenced by its filename (no extension)
-    """
-
-    # Build the list of files that have to be loaded
-    fileList = os.listdir(dataPath)
-
-    # Filter the list of file based on the user's request
-    if staining:
-        fileList = [f  for f in fileList if staining in f]
-    if metric:
-        fileList = [f  for f in fileList if metric in f]
-    if resolution:
-        fileList = [f  for f in fileList if resolution in f]
-
-    # Load the requested files
-    keys = []
-    values = []
-    for f in fileList:
-        keys.append(os.path.splitext(f)[0])
-
-        if 'coarse' in f:
-            index_col = [0]
-        elif 'mid' in f:
-            index_col = [0,1]
-        elif 'fine' in f:
-            index_col = [0,1,2]
-
-        df = pd.read_csv(os.path.join(dataPath,f), header=[0,1], index_col=index_col)
-        values.append(df)
-
-    # Assemble all files in a dict
-    resultDict = {k:v for (k,v) in zip(keys,values)}
-
-    return resultDict
-
-
 def selectData(dataDict, staining, metric, resolution):
     for d in dataDict.keys():
         if d == f"{staining}_{metric}_{resolution}":
             return dataDict[d]
     return []
+
 
 # ------------------------------------------------------------------------------
 # Page-Specific Functions

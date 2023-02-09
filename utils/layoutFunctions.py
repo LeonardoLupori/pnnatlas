@@ -5,10 +5,13 @@ import dash_bootstrap_components as dbc
 
 
 # ------------------------------------------------------------------------------
-# TYPOGRAPHY
+# make_ FUNCTIONS
+# These functions are callse only once to create the backbone of the graphical 
+# plots and elements. Then each element is updated based on callbacks that call 
+# "update_" functions. 
 # ------------------------------------------------------------------------------
 
-def makeSubtitle(string):
+def make_Subtitle(string):
     """
     Makes a subtitle with a line underneath to divide sections
     """
@@ -19,7 +22,7 @@ def makeSubtitle(string):
     ])
     return subtitle
 
-def makeNavBar():
+def make_NavBar():
     """
     Makes the navigation bar
     """
@@ -49,7 +52,7 @@ def makeNavBar():
     )
     return navbar
 
-def makeWfaHeader(idFunc):
+def make_WfaHeader(idFunc):
     """
     Makes the header for the WFA page
     """
@@ -62,8 +65,21 @@ def makeWfaHeader(idFunc):
             ], className='d-flex justify-content-between align-items-center mb-0'),
             
             html.Hr(className="mt-0 mb-1"),
-            html.P("An atlas for WFA-positive PNNs in the mouse brain"
-            )
+            html.Div([
+                html.P("An atlas for WFA-positive PNNs in the mouse brain"),
+                html.H4(id=idFunc('moreInfoIcon'), className="fa-solid fa-book-open ms-3 mt-1 primary")
+            ], className='d-flex mb-0'),
+            dbc.Collapse(
+                html.Div([
+                    "This page shows interactive visualizations of PNN data in the brain of ",
+                    "adult mice", html.Br(), "Data (mean and SEM) come from seven mice.", 
+                    html.Br(),"For detailed information of the procedure, see ",
+                    html.A("here", href="https://www.biorxiv.org/content/10.1101/2023.01.24.525313", target="_blank")
+                ]),
+                id=idFunc("moreInfoCollapse"),
+                is_open=False,
+            ),
+            dbc.Tooltip("More info.", target=idFunc("moreInfoIcon"), className='ms-1')
             ],
             fluid=True,
             className="py-1 bg-light rounded-3",
@@ -72,7 +88,43 @@ def makeWfaHeader(idFunc):
     )
     return header
 
-def makeInteractionHeader(idFunc):
+def make_PvHeader(idFunc):
+    """
+    Makes the header for the PV page
+    """
+    # Main Title
+    header = html.Div(
+        dbc.Container([
+            html.Div([
+                html.H2("PV-positive Neurons", className="display-4"),
+                dbc.Button("Cite", id=idFunc("btn_citeHeader"),color="success", outline=True)
+            ], className='d-flex justify-content-between align-items-center mb-0'),
+            
+            html.Hr(className="mt-0 mb-1"),
+            html.Div([
+                html.P("An atlas for PV-positive Interneurons in the mouse brain"),
+                html.H4(id=idFunc('moreInfoIcon'), className="fa-solid fa-book-open ms-3 mt-1 primary")
+            ], className='d-flex mb-0'),
+            dbc.Collapse(
+                html.Div([
+                    "This page shows interactive visualizations of PV data in the brain of ",
+                    "adult mice", html.Br(), "Data (mean and SEM) come from seven mice.", 
+                    html.Br(),"For detailed information of the procedure, see ",
+                    html.A("here", href="https://www.biorxiv.org/content/10.1101/2023.01.24.525313", target="_blank")
+                ]),
+                id=idFunc("moreInfoCollapse"),
+                is_open=False,
+            ),
+            dbc.Tooltip("More info.", target=idFunc("moreInfoIcon"), className='ms-1')
+            ],
+            fluid=True,
+            className="py-1 bg-light rounded-3",
+        ),
+        className="p-0 my-1",
+    )
+    return header
+
+def make_InteractionHeader(idFunc):
     """
     Makes the header for the WFA page
     """
@@ -94,7 +146,7 @@ def makeInteractionHeader(idFunc):
     )
     return header
 
-def makePVHeader():
+def make_PVHeader():
     """
     Makes the header for the PV page
     """
@@ -121,7 +173,7 @@ def makePVHeader():
     )
     return header
 
-def makeAreasChecklist(idFunc,coarseDict):
+def make_AreasChecklist(idFunc,coarseDict):
     checklist = dbc.Checklist(
         id=idFunc('chklst_areasCorr'),
         options=coarseDict,
@@ -131,7 +183,7 @@ def makeAreasChecklist(idFunc,coarseDict):
     )
     return checklist
 
-def makeInteractionSelectionMenu(idFunc):
+def make_InteractionSelectionMenu(idFunc):
     """
     Makes the left-side menu of the correlation plot in the interaction page
     """
@@ -204,9 +256,9 @@ def makeInteractionSelectionMenu(idFunc):
     ])
     return menu
 
-def makeDiffuseHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict):
+def make_MetricsHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict, staining='wfa'):
     """
-    Makes the left-side menu with dropdowns for the diffuse fluorescence histogram,
+    Makes the left-side menu with dropdowns for the histogram of the multiple staining metrics
     """
     menu = html.Div([
         html.H6(["Select a metric to show:"],className='my-1'),
@@ -215,13 +267,8 @@ def makeDiffuseHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict):
             html.Div([
                 dcc.Dropdown(
                     id=idFunc('drpD_histogMetric'),
-                    options=[
-                        {'label':'Diffuse Fluorescence','value':'diffuse'},
-                        {'label':'PNN density','value':'density'},
-                        {'label':'PNN intensity','value':'intensity'},
-                        {'label':'PNN energy','value':'energy'},
-                    ],
-                    value='diffuse',
+                    options=getMetricsLabels(staining=staining),
+                    value='energy',
                     multi = False,
                     clearable=False,
                 )],
@@ -296,7 +343,7 @@ def makeDiffuseHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict):
     ])
     return menu
 
-def makeCollapsableTable(idFunc):
+def make_CollapsableTable(idFunc):
     """
     Makes the collapsable tabular data section
     """
@@ -314,31 +361,25 @@ def makeCollapsableTable(idFunc):
     )
     return collapsTable
 
-def makeAnatomicalExplorerSelectionMenu(idFunc):
+def make_AnatomicalExplorerSelectionMenu(idFunc, staining='wfa'):
     """
     Makes the layout for the left-side selection menu of the anatomical explorer
     """
     menu = html.Div([
-
         html.H6(["Select a metric to show:"],className='my-1'),
         html.Div([
             html.Div([
                 dcc.Dropdown(
-                    id=idFunc('drpD_anatomDataset'),
-                    options=[
-                        {'label':'Diffuse Fluorescence','value':'diffuse'},
-                        {'label':'PNN density','value':'density'},
-                        {'label':'PNN intensity','value':'intensity'},
-                        {'label':'PNN energy','value':'energy'},
-                    ],
-                    value='diffuse',
+                    id=idFunc('drpD_anatomMetric'),
+                    options= getMetricsLabels(staining=staining),
+                    value='energy',
                     multi = False,
                     clearable=False,
                 )],
                 style={'flex-grow':'1'},
             ),
             html.Div([
-                dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info'))], 
+                dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info_anat'))], 
             )],
             className='mt-1 mb-3', 
             style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
@@ -348,22 +389,11 @@ def makeAnatomicalExplorerSelectionMenu(idFunc):
         dcc.Dropdown(
             id=idFunc('drpD_anatomCmap'),
             options = colormapDictListDropdown(),
-            value='Blues',
+            value='PuBu' if staining=='wfa' else 'Reds',
             multi = False,
             clearable=False,
             className="mt-1 mb-3"
         ),
-        html.H6(["Color limits:"],className='my-1'),
-        dcc.RangeSlider(min=0, max=5,
-            step=0.1,
-            marks={0:'0',1:'1',2:'2',3:'3',4:'4',5:'5'},
-            value=[0,2.3],
-            pushable=0.5,
-            id=idFunc('slider_clims'),
-            tooltip={"placement": "bottom", "always_visible": False},
-            className='mt-1 mb-3'
-        ),
-
 
         html.H6(["Antero-Posterior Axis:"],className='mt-5 mb-1'),
         dcc.Slider(0, 34, 1, value=10, id=idFunc('slider_ap'),
@@ -376,21 +406,7 @@ def makeAnatomicalExplorerSelectionMenu(idFunc):
     ])
     return menu
 
-def colormapDictListDropdown():
-    """
-    Creates a list of dicts to fill a dropdown to select different colormaps
-    """
-    cmapDictList = [
-        dict(label='Blue',value='Blues'),
-        dict(label='Red',value='Reds'),
-        dict(label='Green',value='Greens'),
-        dict(label='Gray',value='Greys'),
-        dict(label='Viridis',value='viridis'),
-        dict(label='Magma',value='magma'),
-    ]
-    return cmapDictList
-
-def makeCitationOffCanvas(idFunc):
+def make_CitationOffCanvas(idFunc):
     """
     Makes the layout for the offcanvas menu for citations
     """
@@ -432,12 +448,12 @@ def makeCitationOffCanvas(idFunc):
     )
     return offcanvas
 
-def makeMetricInfoModal(idFunc):
+def make_MetricInfoModal(idFunc):
 
     diffuseCard = dbc.Card([
         dbc.CardBody([
             html.H5("Diffuse Fluorescence (A.U.)", className="card-title primary"),
-            html.P(html.I("'How much WFA staining is there?'")),
+            html.P(html.I("'How much staining is there?'")),
             html.Hr(className="mb-1"),
             html.P(["For each mouse, we calculate the ", html.B("average fluorescence"), 
                 " intensity across all the pixels belonging to a brain region. " + 
@@ -453,7 +469,7 @@ def makeMetricInfoModal(idFunc):
     densityCard = dbc.Card([
         dbc.CardBody([
             html.H5(["Cell Density (cells/mm", html.Sup(2) ,")"], className="card-title"),
-            html.P(html.I("'How many cells are there?'")),
+            html.P(html.I("'How many cells/PNNs are there?'")),
             html.Hr(className="mb-1"),
             html.P(["For each mouse, we calculate the ", html.B(["number of cells per mm",html.Sup(2)]), 
                 " In a brain region. " + 
@@ -468,7 +484,7 @@ def makeMetricInfoModal(idFunc):
     intensityCard = dbc.Card([
         dbc.CardBody([
             html.H5("Cell Intensity (A.U.)", className="card-title"),
-            html.P(html.I("'How intense are the cells here?'")),
+            html.P(html.I("'How intense are the cells/PNNs here?'")),
             html.Hr(className="mb-1"),
             html.P(["For each cell, we measure the average pixel intesity value (", html.I(["range: 0-1"]), ") of ",
                 "all pixels belonging to that cell.", html.Br(), "For each brain region, we compute the ",
@@ -483,7 +499,7 @@ def makeMetricInfoModal(idFunc):
     energyCard = dbc.Card([
         dbc.CardBody([
             html.H5("Cell Energy (A.U.)", className="card-title"),
-            html.P(html.I("'What's the overall prevalence of these cells here?'")),
+            html.P(html.I("'What's the overall strenght of cells/PNNs here?'")),
             html.Hr(className="mb-1"),
             html.P(["Can be thought of as a measure of cell density, weighted by intensity. ",html.Br(),
                 "For each region, energy is defined as the sum of the cell intensity ",
@@ -514,6 +530,40 @@ def makeMetricInfoModal(idFunc):
 
     return modal
 
+
 # ------------------------------------------------------------------------------
 # 
 # ------------------------------------------------------------------------------
+
+def colormapDictListDropdown():
+    """
+    Creates a list of dicts to fill a dropdown to select different colormaps
+    """
+    cmapDictList = [
+        dict(label='Blue',value='PuBu'),
+        dict(label='Red',value='Reds'),
+        dict(label='Green',value='Greens'),
+        dict(label='Gray',value='Greys'),
+        dict(label='Viridis',value='viridis'),
+        dict(label='Magma',value='magma'),
+    ]
+    return cmapDictList
+
+def getMetricsLabels(staining='wfa'):
+    if staining == 'wfa':
+        labels = [
+            {'label':'Diffuse Fluorescence','value':'diffuseFluo'},
+            {'label':'PNN density','value':'density'},
+            {'label':'PNN intensity','value':'intensity'},
+            {'label':'PNN energy','value':'energy'},
+        ]
+    elif staining == 'pv':
+        labels = [
+            {'label':'Diffuse Fluorescence','value':'diffuseFluo'},
+            {'label':'PV density','value':'density'},
+            {'label':'PV intensity','value':'intensity'},
+            {'label':'PV energy','value':'energy'},
+        ]
+
+    return labels
+

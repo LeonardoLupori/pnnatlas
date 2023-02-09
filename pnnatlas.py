@@ -1,6 +1,6 @@
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
-from pages import wfa, interactions, genes, blankPage #, pv
+from pages import wfa, genes, pv#, blankPage #, pv, interactions
 
 
 app = Dash(__name__,
@@ -20,14 +20,14 @@ app.layout = html.Div([
 def display_page(pathname):
     if pathname == '/wfa':
         return wfa.layout
-    # elif pathname == '/pv':
-    #     return pv.layout
-    elif pathname == '/interactions':
-        return interactions.layout
+    elif pathname == '/pv':
+        return pv.layout
+    # elif pathname == '/interactions':
+    #     return interactions.layout
     elif pathname == '/genes':
         return genes.layout
-    else:
-        return blankPage.layout
+    # else:
+    #     return blankPage.layout
 
 
 # This server object will be loaded by the WSGI script to be served as a webapp
