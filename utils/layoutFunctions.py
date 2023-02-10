@@ -34,8 +34,8 @@ def make_NavBar():
             dbc.NavItem(dbc.NavLink('Genes', href='/genes')),
             dbc.DropdownMenu(
                 children=[
-                    dbc.DropdownMenuItem('Cite', href='#'),
-                    dbc.DropdownMenuItem('About Us', href='#'),
+                    dbc.DropdownMenuItem('Cite', id='citeDropdown'),
+                    dbc.DropdownMenuItem('About Us', id='aboutUsDropdown'),
                 ],
                 nav=True,
                 in_navbar=True,
@@ -193,10 +193,10 @@ def make_InteractionSelectionMenu(idFunc):
 
     # Create a list of dicts for the dropdown of the different metrics
     metricsDictList = [
-        {'label':'Diffuse Fluorescence','value':'diffuse'},
+        {'label':'Cell Energy','value':'energy'},
+        {'label':'Diffuse Fluorescence','value':'diffuseFluo'},
         {'label':'Cell Density','value':'density'},
         {'label':'Cell Intensity','value':'intensity'},
-        {'label':'Cell Energy','value':'energy'},
     ]
 
     
@@ -219,7 +219,7 @@ def make_InteractionSelectionMenu(idFunc):
                 dcc.Dropdown(
                     id=idFunc('drpD_xMetric'),
                     options = metricsDictList,
-                    value='diffuse',
+                    value='energy',
                     multi = False,
                     clearable=False,
                     className='mb-2'
@@ -245,7 +245,7 @@ def make_InteractionSelectionMenu(idFunc):
                 dcc.Dropdown(
                     id=idFunc('drpD_yMetric'),
                     options = metricsDictList,
-                    value='diffuse',
+                    value='energy',
                     multi = False,
                     clearable=False,
                     className='mb-2'
@@ -253,6 +253,18 @@ def make_InteractionSelectionMenu(idFunc):
 
             ],className='my-3 border border-light rounded-3')
         ]),
+        dbc.Row([
+            html.Div([
+            # dbc.Button("Reset", id="btn-reset", color="primary", className="my-1"),
+            dbc.Switch(
+                label="Z-Score",
+                value=False,
+                id=idFunc("switch_zScore"),
+                # class_name="mt-1"
+                )],
+            className="d-flex"
+            )
+        ])
     ])
     return menu
 
@@ -343,6 +355,98 @@ def make_MetricsHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict, st
     ])
     return menu
 
+
+def make_ColocalizationHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict):
+    """
+    Makes the left-side menu with dropdowns for the histogram of the multiple staining metrics
+    """
+    menu = html.Div([
+        html.H6(["Select a colocalization metric:"],className='my-1'),
+
+        html.Div([
+            html.Div([
+                dcc.Dropdown(
+                    id=idFunc('drpD_Metric'),
+                    options=[
+                        {'label':'Percentage of PV-positive PNNs','value':'pvPositive_pnn'},
+                        {'label':'Percentage of WFA-positive PV cells','value':'wfaPositive_pv'},
+                    ],
+                    value='pvPositive_pnn',
+                    multi = False,
+                    clearable=False,
+                )],
+                style={'flex-grow':'1'},
+            ),
+            html.Div([
+                dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info'))], 
+            )],
+            className='mt-1 mb-5', 
+            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+        ),
+        html.H6(["Select a major brain subdivision:"],className='my-1'),
+        dcc.Dropdown(
+            id=idFunc('drpD_majorSubd'),
+            options = coarseDict,
+            value=315, # Defaults to Isocortex
+            multi = False,
+            className='my-1 mb-3'
+        ),
+        html.H6(["Add ",html.B("coarse-ontology")," region(s):"], className='my-1'),
+        html.Div([
+            html.Div([
+                dcc.Dropdown(
+                    id=idFunc('drpD_addCoarse'),
+                    options = coarseDict,
+                    multi = True,
+                )],
+                style={'flex-grow':'1'},
+            ),
+            html.Div([
+                dbc.Button("All",id=idFunc('btn_allMajorDiff'))], 
+            )],
+            className='mt-1 mb-3', 
+            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+        ),
+        html.H6(["Add ", html.B("mid-ontology"), " region(s):"],className='my-1'),
+        dcc.Dropdown(
+            id=idFunc('drpD_addMid'),
+            options = midDict,
+            multi = True,
+            className="mt-1 mb-3"
+        ),
+        html.H6(["Add ", html.B("fine-ontology"), " region(s):"],className='my-1'),
+        dcc.Dropdown(
+            id=idFunc('drpD_addFine'),
+            options = fineDict,
+            multi = True,
+            className="mt-1 mb-3"
+        ),
+        html.Div([
+            # dbc.Button("Reset", id="btn-reset", color="primary", className="my-1"),
+            dbc.Switch(
+                label="Sort regions",
+                value=False,
+                id=idFunc("switch_sortDiff"),
+                # class_name="mt-1"
+                )],
+            className="d-flex"
+        ),
+
+        # TOOLTIPS
+        dbc.Tooltip("Add all the 12 major brain subdivisions.", target=idFunc("btn_allMajorDiff")),
+        dbc.Tooltip(["Sort in descending order.", html.Br(), "Otherwise, sorted on region ontology."],
+            target=idFunc("switch_sortDiff"),placement='bottom'
+        ),
+        dbc.Tooltip("Add all the regions of a selected major brain subdivision",
+            target=idFunc("drpD_majorSubd"),placement="right"
+        ),
+        dbc.Tooltip("Major brain subdivisions",target=idFunc("drpD_addCoarse"),placement="right"),
+        dbc.Tooltip("Regions at single-area level",target=idFunc("drpD_addMid"),placement="right"),
+        dbc.Tooltip("Regions at single-layer level",target=idFunc("drpD_addFine"),placement="right"),
+    ])
+    return menu
+
+
 def make_CollapsableTable(idFunc):
     """
     Makes the collapsable tabular data section
@@ -354,7 +458,7 @@ def make_CollapsableTable(idFunc):
             color="primary",
         ),
         dbc.Collapse(
-            id=idFunc("collps_diffTab"),
+            id=idFunc("collps_Tab"),
             is_open=False,
         )],
         className='mt-3'
@@ -531,6 +635,56 @@ def make_MetricInfoModal(idFunc):
     return modal
 
 
+
+def make_ColocInfoModal(idFunc):
+
+    pvPositivePnnCard = dbc.Card([
+        dbc.CardBody([
+            html.H5("PV-positive PNNs", className="card-title primary"),
+            html.P(html.I("'What's the percentage of PNNs that surround a PV cell?'")),
+            html.Hr(className="mb-1"),
+            html.P(["For each mouse, we calculate the ", html.B("average fluorescence"), 
+                " intensity across all the pixels belonging to a brain region. " + 
+                "Then, we normalize this value dividing it by the average fluorescence intensity " + 
+                "of the entire brain."],
+                className="card-text")]
+        )],
+        style={'height':'100%'},
+        outline=True,
+        color='info',
+    )
+
+    wfaPositivePvCard = dbc.Card([
+        dbc.CardBody([
+            html.H5(["Cell Density (cells/mm", html.Sup(2) ,")"], className="card-title"),
+            html.P(html.I("'What's the percentage of PV cells that are surrounded by a PNN?''")),
+            html.Hr(className="mb-1"),
+            html.P(["For each mouse, we calculate the ", html.B(["number of cells per mm",html.Sup(2)]), 
+                " In a brain region. " + 
+                "This value is the cell density."],
+                className="card-text")]
+        )],
+        style={'height':'100%'},
+        outline=True,
+        color='info',
+    )
+
+    modal = dbc.Modal([
+            dbc.ModalHeader(dbc.ModalTitle("Colocalization metrics analyzed")),
+            dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col([pvPositivePnnCard], width=6),
+                    dbc.Col([wfaPositivePvCard]),
+                ], className='')]
+        )],
+        size='lg',
+        id=idFunc('modal_info')
+    )
+
+    return modal
+
+
+
 # ------------------------------------------------------------------------------
 # 
 # ------------------------------------------------------------------------------
@@ -552,17 +706,17 @@ def colormapDictListDropdown():
 def getMetricsLabels(staining='wfa'):
     if staining == 'wfa':
         labels = [
+            {'label':'PNN Energy','value':'energy'},
             {'label':'Diffuse Fluorescence','value':'diffuseFluo'},
-            {'label':'PNN density','value':'density'},
-            {'label':'PNN intensity','value':'intensity'},
-            {'label':'PNN energy','value':'energy'},
+            {'label':'PNN Density','value':'density'},
+            {'label':'PNN Intensity','value':'intensity'},
         ]
     elif staining == 'pv':
         labels = [
+            {'label':'PV Energy','value':'energy'},
             {'label':'Diffuse Fluorescence','value':'diffuseFluo'},
-            {'label':'PV density','value':'density'},
-            {'label':'PV intensity','value':'intensity'},
-            {'label':'PV energy','value':'energy'},
+            {'label':'PV Density','value':'density'},
+            {'label':'PV Intensity','value':'intensity'},
         ]
 
     return labels

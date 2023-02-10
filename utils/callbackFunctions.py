@@ -40,7 +40,6 @@ def id_factory(page: str):
         """
         return f"{page}-{_id}"
     return func
-
     
 def dataFrame_to_labelDict(df,indexName,structuresDf):
     """dataFrame_to_labelDict(df,indexName,structuresDf)
@@ -59,7 +58,6 @@ def dataFrame_to_labelDict(df,indexName,structuresDf):
     # Sort the region names alphabetically
     labelDict = sorted(labelDict, key= lambda x: x['label'])
     return labelDict
-
 
 def emptyGraph():
     figure = {
@@ -85,65 +83,9 @@ def emptyGraph():
     }
     return figure
 
-
 def emptyMetricsDf():
     emptyDf = pd.DataFrame(columns=['regionName','acronym','regionID','mean','sem','color'])
     return emptyDf
-
-
-def combineMetricsDataframes(major_selection, addCoarse_selection, addMid_selection, #
-    addFine_selection, coarseDf, midDf, fineDf):
-
-    pass
-
-
-def combineDiffuseDataframes(major_selection, addCoarse_selection, addMid_selection, addFine_selection,
-        coarseDf, midDf, fineDf):
-    """
-    combineDiffuseDataframes(major_selection, addCoarse_selection, addMid_selection, addFine_selection)
-
-    Takes the user selection on the dropdown menus and returns a combined dataframe
-    with all the selected areas on each row.
-    """
-    emptyDf = emptyMetricsDf()
-
-    # Dataframe with all the regions in the selected major subdivision
-    if major_selection:
-        d1 = midDf.loc[major_selection,:]
-    else:
-        d1 = emptyDf
-
-    # Df with the selected coarse regions
-    if addCoarse_selection: 
-        d2 = coarseDf.loc[addCoarse_selection]
-    else:
-        d2 = emptyDf
-
-    # Df with the selected mid regions
-    if addMid_selection:
-        idx = pd.IndexSlice
-        d3 = midDf.loc[idx[:,addMid_selection],:]
-        d3.index = d3.index.droplevel(level=0)
-    else:
-        d3 = emptyDf
-
-    # Df with the selected fine regions
-    if addFine_selection:
-        idx = pd.IndexSlice
-        d4 = fineDf.loc[idx[:,:,addFine_selection],:]
-        d4.index = d4.index.droplevel(level=[0,1])
-    else:
-        d4 = emptyDf
-
-    # Concatenate all the dataframes together
-    dfList = [d1,d2,d3,d4]
-    if all([x.empty for x in dfList]):
-        combinedDf = emptyDf
-    else:
-        combinedDf = pd.concat([x for x in dfList if not x.empty], axis=0)
-
-    return combinedDf
-
 
 def loadStructuresDf(structuresPath):
     """
@@ -162,83 +104,95 @@ def loadStructuresDf(structuresPath):
 
     return structuresDf
 
+def mergeCoordinatesAndData(coordDf, dataDf):
+    aggrData = dataDf.aggregate(func=['mean','sem'], axis=1)
+    mergedDf = coordDf.merge(aggrData,how='left',left_on='regionID',right_on='mid')
 
-def aggregateFluoDataframe(combinedDf, structuresDf):
+    return mergedDf
+
+def calculateGraphHeight(numRows):
     """
-    Takes a combined DataFrame of a multiple selection of regions and aggregate it
-    to calculate mean and SEM and add color, name and acronym information for all 
-    the regions
+    Calculates the figure height based on the number of rows to display
     """
-    if combinedDf.empty:
-        return emptyMetricsDf()
+    if numRows<3:
+        height = numRows*200
+    elif numRows<5:
+        height = numRows*120
+    elif numRows<10:
+        height = numRows*55
+    elif numRows<15:
+        height = numRows*40
+    elif numRows<25:
+        height = numRows*30
+    else:
+        height = numRows*20
+    return height
 
-    # Aggregate data and calculate statistics and display options for all the areas 
-    aggrDf = combinedDf.aggregate(func=['mean','sem'], axis=1)
-    # Merge combinedDf with some columns of the structures Df
-    aggrDf = aggrDf.join(structuresDf.loc[:,['acronym','name','rgb_plotly']], how='inner')
-    # Change column names
-    aggrDf = aggrDf.rename(dict(rgb_plotly='color', name='regionName'),axis=1)
-    # Add column with the region ID
-    aggrDf['regionId'] = aggrDf.index.tolist()
-    # Reorder columns (this df will be displayed as tabular data in the webapp)
-    aggrDf = aggrDf[['regionName','acronym','regionId','mean','sem','color']]
-
-    return aggrDf
-
-
-def diffuseFluoHistogram(aggrDf, selMetric='diffuseFluo', staining='wfa'):
-
-    # Return an empty graph with a warning if no regions are selected
-    if aggrDf.empty:
-        return emptyGraph()
-
-    # Assemble a dict that links regiona names to colors
-    colorDict = {k:v for (k,v) in zip(aggrDf['regionName'], aggrDf['color'])}
-
-    # Create the barplot
-    fig = px.bar(data_frame=aggrDf, x='mean', y='regionName',
-        color='regionName',
-        error_x='sem',
-        template='plotly_white',
-        color_discrete_map=colorDict,
-        orientation='h',
-
-        # Customization of the Hovers
-        hover_name='regionName',
-        hover_data={'regionName':False,
-            'mean':':.3f',
-            'sem':':.3f'},
-        )
-
-    # Determine the label for the x axis based on the staining and metric selected
-    if staining == 'wfa':
-        switchName = {
-            'diffuseFluo': 'WFA diffuse intensity (A.U.)',
-            'energy': 'PNN Energy (A.U.)',
-            'intensity': 'PNN Intensity (A.U.)',
-            'density': 'PNN Density (PNNs/mm^2)'
-        }
+def getClimsAnatomicalExplorer(selMetric, staining='wfa'):
+    """
+    Based on the selected metric this function returns reasonable default values
+    to use to set various properties of slider for min and max in the anatomical explorer
+    """
+    if staining =='wfa':
+        if selMetric=='density':
+            min = 0
+            max = 120
+        elif selMetric=='intensity':
+            min = 0
+            max = 0.7
+        elif selMetric=='energy':
+            min = 0
+            max = 2.5
+        elif selMetric=='diffuseFluo':
+            min = 0
+            max = 2.3
     elif staining == 'pv':
-        switchName = {
-            'diffuseFluo': 'PV diffuse intensity (A.U.)',
-            'energy': 'PV Energy (A.U.)',
-            'intensity': 'PV Intensity (A.U.)',
-            'density': 'PV Density (cells/mm^2)'
-        }
+        if selMetric=='density':
+            min = 0
+            max = 200
+        elif selMetric=='intensity':
+            min = 0
+            max = 0.7
+        elif selMetric=='energy':
+            min = 0
+            max = 3
+        elif selMetric=='diffuseFluo':
+            min = 0
+            max = 2.2
 
-    fig.update_layout(
-        font_family="arial",
-        xaxis_title=switchName[selMetric],
-        yaxis_title="",
-        showlegend=False,
-        height= calculateGraphHeight(aggrDf.shape[0]),
-        )
+    return min,max
 
-    fig.update_xaxes(
-        title_font = {"size":16}
-    )
-    return fig
+def loadAllSlices(folderPath:str):
+    """
+    loadAllSlices(folderPath)
 
+    Loads all the json files in a folder in a list of pandas dataframes and 
+    returns the list
+    """
+    fileNames = sorted(os.listdir(folderPath))
+    dfList = []
+    for fileName in fileNames:
+        df = pd.read_json(os.path.join(folderPath,fileName))
+        dfList.append(df)
+    return dfList
+
+def selectData(dataWfa, dataPv, selStaining, selMetric, resolution):
+
+    if selStaining=='wfa':
+        output = dataWfa[resolution].xs(selMetric, axis=1, level='params')
+        return output
+    elif selStaining=='pv':
+        output = dataPv[resolution].xs(selMetric, axis=1, level='params')
+        return output
+    return []
+
+
+# ------------------------------------------------------------------------------
+# Page-Specific Functions
+# ------------------------------------------------------------------------------
+
+# WFA and PV
+# ------------------------------------------------------------------------------
 
 def makeAnatExplorerScatter():
     """
@@ -284,42 +238,6 @@ def makeAnatExplorerScatter():
     )
 
     return fig
-
-
-def makeInteractionScatter():
-    """
-    Draws the Scatter plot in the interaction page for the first time so that 
-    boring features of the figure layout do not have to be recomputed every time 
-    the plot updates.
-
-    This function is called only at graph creation while the graph update is 
-    performed through the function redrawInteractionScatter()
-    """
-    fig = go.Figure()
-
-    fig.update_layout(
-        template='none',
-        height=650,
-        legend=dict(
-            orientation="v",
-        ),
-        font=dict(
-            # family='Arial',
-            size=14,
-        ),
-        margin=dict(
-                t=30,
-            )
-    )
-
-    fig.update_yaxes(
-        scaleanchor = "x",  
-        scaleratio = 1,
-    )
-
-
-    return fig
-
 
 def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
     """
@@ -409,97 +327,133 @@ def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
     return fig
 
 
-def mergeCoordinatesAndData(coordDf, dataDf):
-    aggrData = dataDf.aggregate(func=['mean','sem'], axis=1)
-    mergedDf = coordDf.merge(aggrData,how='left',left_on='regionID',right_on='mid')
-
-    return mergedDf
-
-
-def calculateGraphHeight(numRows):
+def combineDiffuseDataframes(major_selection, addCoarse_selection, addMid_selection, addFine_selection,
+        coarseDf, midDf, fineDf):
     """
-    Calculates the figure height based on the number of rows to display
+    combineDiffuseDataframes(major_selection, addCoarse_selection, addMid_selection, addFine_selection)
+
+    Takes the user selection on the dropdown menus and returns a combined dataframe
+    with all the selected areas on each row.
     """
-    if numRows<3:
-        height = numRows*200
-    elif numRows<5:
-        height = numRows*120
-    elif numRows<10:
-        height = numRows*55
-    elif numRows<15:
-        height = numRows*40
-    elif numRows<25:
-        height = numRows*30
+    emptyDf = emptyMetricsDf()
+
+    # Dataframe with all the regions in the selected major subdivision
+    if major_selection:
+        d1 = midDf.loc[major_selection,:]
     else:
-        height = numRows*20
-    return height
+        d1 = emptyDf
 
+    # Df with the selected coarse regions
+    if addCoarse_selection: 
+        d2 = coarseDf.loc[addCoarse_selection]
+    else:
+        d2 = emptyDf
 
-def getClimsAnatomicalExplorer(selMetric, staining='wfa'):
+    # Df with the selected mid regions
+    if addMid_selection:
+        idx = pd.IndexSlice
+        d3 = midDf.loc[idx[:,addMid_selection],:]
+        d3.index = d3.index.droplevel(level=0)
+    else:
+        d3 = emptyDf
+
+    # Df with the selected fine regions
+    if addFine_selection:
+        idx = pd.IndexSlice
+        d4 = fineDf.loc[idx[:,:,addFine_selection],:]
+        d4.index = d4.index.droplevel(level=[0,1])
+    else:
+        d4 = emptyDf
+
+    # Concatenate all the dataframes together
+    dfList = [d1,d2,d3,d4]
+    if all([x.empty for x in dfList]):
+        combinedDf = emptyDf
+    else:
+        combinedDf = pd.concat([x for x in dfList if not x.empty], axis=0)
+
+    return combinedDf
+
+def aggregateFluoDataframe(combinedDf, structuresDf):
     """
-    Based on the selected metric this function returns reasonable default values
-    to use to set various properties of slider for min and max in the anatomical explorer
+    Takes a combined DataFrame of a multiple selection of regions and aggregate it
+    to calculate mean and SEM and add color, name and acronym information for all 
+    the regions
     """
-    if staining =='wfa':
-        if selMetric=='density':
-            min = 0
-            max = 120
-        elif selMetric=='intensity':
-            min = 0
-            max = 0.7
-        elif selMetric=='energy':
-            min = 0
-            max = 2.5
-        elif selMetric=='diffuseFluo':
-            min = 0
-            max = 2.3
+    if combinedDf.empty:
+        return emptyMetricsDf()
+
+    # Aggregate data and calculate statistics and display options for all the areas 
+    aggrDf = combinedDf.aggregate(func=['mean','sem'], axis=1)
+    # Merge combinedDf with some columns of the structures Df
+    aggrDf = aggrDf.join(structuresDf.loc[:,['acronym','name','rgb_plotly']], how='inner')
+    # Change column names
+    aggrDf = aggrDf.rename(dict(rgb_plotly='color', name='regionName'),axis=1)
+    # Add column with the region ID
+    aggrDf['regionId'] = aggrDf.index.tolist()
+    # Reorder columns (this df will be displayed as tabular data in the webapp)
+    aggrDf = aggrDf[['regionName','acronym','regionId','mean','sem','color']]
+
+    return aggrDf
+
+def update_diffuseFluoHistogram(aggrDf, selMetric='diffuseFluo', staining='wfa'):
+
+    # Return an empty graph with a warning if no regions are selected
+    if aggrDf.empty:
+        return emptyGraph()
+
+    # Assemble a dict that links regiona names to colors
+    colorDict = {k:v for (k,v) in zip(aggrDf['regionName'], aggrDf['color'])}
+
+    # Create the barplot
+    fig = px.bar(data_frame=aggrDf, x='mean', y='regionName',
+        color='regionName',
+        error_x='sem',
+        template='plotly_white',
+        color_discrete_map=colorDict,
+        orientation='h',
+
+        # Customization of the Hovers
+        hover_name='regionName',
+        hover_data={'regionName':False,
+            'mean':':.3f',
+            'sem':':.3f'},
+        )
+
+    # Determine the label for the x axis based on the staining and metric selected
+    if staining == 'wfa':
+        switchName = {
+            'diffuseFluo': 'WFA diffuse intensity (A.U.)',
+            'energy': 'PNN Energy (A.U.)',
+            'intensity': 'PNN Intensity (A.U.)',
+            'density': 'PNN Density (PNNs/mm^2)'
+        }
     elif staining == 'pv':
-        if selMetric=='density':
-            min = 0
-            max = 200
-        elif selMetric=='intensity':
-            min = 0
-            max = 0.7
-        elif selMetric=='energy':
-            min = 0
-            max = 3
-        elif selMetric=='diffuseFluo':
-            min = 0
-            max = 2.2
+        switchName = {
+            'diffuseFluo': 'PV diffuse intensity (A.U.)',
+            'energy': 'PV Energy (A.U.)',
+            'intensity': 'PV Intensity (A.U.)',
+            'density': 'PV Density (cells/mm^2)'
+        }
 
-    return min,max
+    fig.update_layout(
+        font_family="arial",
+        xaxis_title=switchName[selMetric],
+        yaxis_title="",
+        showlegend=False,
+        height= calculateGraphHeight(aggrDf.shape[0]),
+        )
 
+    fig.update_xaxes(
+        title_font = {"size":16}
+    )
+    return fig
 
-def loadAllSlices(folderPath:str):
-    """
-    loadAllSlices(folderPath)
-
-    Loads all the json files in a folder in a list of pandas dataframes and 
-    returns the list
-    """
-    fileNames = sorted(os.listdir(folderPath))
-    dfList = []
-    for fileName in fileNames:
-        df = pd.read_json(os.path.join(folderPath,fileName))
-        dfList.append(df)
-    return dfList
-
-
-def selectData(dataDict, staining, metric, resolution):
-    for d in dataDict.keys():
-        if d == f"{staining}_{metric}_{resolution}":
-            return dataDict[d]
-    return []
-
-
-# ------------------------------------------------------------------------------
-# Page-Specific Functions
-# ------------------------------------------------------------------------------
 
 
 # Interactions
 # ------------------------------------------------------------------------------
-def intScattAggregateData(structuresDf, xData, yData):
+def intScattAggregateData(structuresDf, xData, yData, zScore):
     
     xData = xData.aggregate(func=['mean'], axis=1)
     yData = yData.aggregate(func=['mean'], axis=1)
@@ -510,14 +464,48 @@ def intScattAggregateData(structuresDf, xData, yData):
     merged = merged.drop(1009, level='mid')
 
     # Z-score
-    means = merged[['mean_x','mean_y']]
-    means = (means - means.mean()).divide(means.std())
-    merged[['mean_x','mean_y']] = means
+    if zScore:
+        means = merged[['mean_x','mean_y']]
+        means = (means - means.mean()).divide(means.std())
+        merged[['mean_x','mean_y']] = means        
 
     return merged
 
+def makeInteractionScatter():
+    """
+    Draws the Scatter plot in the interaction page for the first time so that 
+    boring features of the figure layout do not have to be recomputed every time 
+    the plot updates.
 
-def redrawIntScatter(fig, aggrDf, structDf, xStaining,xMetric,yStaining,yMetric):
+    This function is called only at graph creation while the graph update is 
+    performed through the function redrawInteractionScatter()
+    """
+    fig = go.Figure()
+
+    fig.update_layout(
+        template='none',
+        height=650,
+        legend=dict(
+            orientation="v",
+        ),
+        font=dict(
+            # family='Arial',
+            size=14,
+        ),
+        margin=dict(
+                t=30,
+            )
+    )
+
+    fig.update_yaxes(
+        scaleanchor = "x",  
+        scaleratio = 1,
+    )
+
+
+    return fig
+
+def update_IntScatter(fig, aggrDf, structDf, xStaining, xMetric, yStaining, yMetric, zScore):
 
     # Convert back the figure in a go object
     fig = go.Figure(fig)
@@ -550,11 +538,16 @@ def redrawIntScatter(fig, aggrDf, structDf, xStaining,xMetric,yStaining,yMetric)
     # Sort traces alphabetically
     fig.data = sorted(fig.data, key=lambda d: d['name']) 
 
+    xLabel = f"{xStaining.upper()} - {xMetric}"
+    yLabel = f"{yStaining.upper()} - {yMetric}"
+    if zScore:
+        xLabel = xLabel + " - (Z-Score)"
+        yLabel = yLabel + " - (Z-Score)"
     fig.update_xaxes(
-        title=f"{xStaining.upper()} - {xMetric} - (z-score)"
+        title=xLabel
     )
     fig.update_yaxes(
-        title=f"{yStaining.upper()} - {yMetric} - (z-score)"
+        title=yLabel
     )
 
     
@@ -563,6 +556,48 @@ def redrawIntScatter(fig, aggrDf, structDf, xStaining,xMetric,yStaining,yMetric)
     return fig
 
 
-    hoverString = ("<b>" + area['acronym'] + "</b>" + "<br>" + "<i>" + area['regionName'] + "</i>" + "<br>" +
-                f"Mean: {area['mean']:.3f}" + "<br>" + f"sem: {area['sem']:.3f}"
-            )
+def combineColocDataFrames(major_selection, addCoarse_selection, addMid_selection, addFine_selection,
+        coarseDf, midDf, fineDf):
+        pass
+
+def update_colocHistogram(aggrDf, selMetric):
+
+    # Return an empty graph with a warning if no regions are selected
+    if aggrDf.empty:
+        return emptyGraph()
+
+    # Assemble a dict that links regiona names to colors
+    colorDict = {k:v for (k,v) in zip(aggrDf['regionName'], aggrDf['color'])}
+
+    # Create the barplot
+    fig = px.bar(data_frame=aggrDf, x='mean', y='regionName',
+        color='regionName',
+        error_x='sem',
+        template='plotly_white',
+        color_discrete_map=colorDict,
+        orientation='h',
+
+        # Customization of the Hovers
+        hover_name='regionName',
+        hover_data={'regionName':False,
+            'mean':':.3f',
+            'sem':':.3f'},
+        )
+
+    # Determine the label for the x axis based on the staining and metric selected
+    switchName = {
+        'pvPositive_pnn': 'Percentage of PNNs around a PV cell',
+        'wfaPositive_pv': 'Percentage of PV cells surrounded by a PNN',
+    }
+    fig.update_layout(
+        font_family="arial",
+        xaxis_title=switchName[selMetric],
+        yaxis_title="",
+        showlegend=False,
+        height= calculateGraphHeight(aggrDf.shape[0]),
+        )
+
+    fig.update_xaxes(
+        title_font = {"size":16}
+    )
+    return fig

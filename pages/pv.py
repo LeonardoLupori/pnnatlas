@@ -95,7 +95,7 @@ layout = dbc.Container([
 
 @callback(
     Output(component_id=id('hist_diffuse'), component_property='figure'),
-    Output(component_id=id('collps_diffTab'), component_property='children'),
+    Output(component_id=id('collps_Tab'), component_property='children'),
     Input(component_id=id('drpD_histogMetric'), component_property='value'),
     Input(component_id=id('drpD_majorSubd'), component_property='value'),
     Input(component_id=id('drpD_addCoarse'), component_property='value'),
@@ -122,7 +122,7 @@ def updateHistogram(selMetric, maj_sel, addC_sel, addM_sel, addF_sel, sortRegion
         aggrDf = aggrDf.sort_values(by='mean',ascending=False)
 
     # Create a new visualization and table and return them
-    fig = cf.diffuseFluoHistogram(aggrDf, selMetric, 'pv')
+    fig = cf.update_diffuseFluoHistogram(aggrDf, selMetric, 'pv')
     tab = dbc.Table.from_dataframe(aggrDf.drop(columns=['color']), striped=True, bordered=True, hover=True)
     return fig, tab
 
@@ -151,11 +151,11 @@ def updateAnatomicalExplorer(fig, selMetric, cmap, apIdx):
 
 
 @callback(
-    Output(component_id=id('collps_diffTab'), component_property='is_open'),
+    Output(component_id=id('collps_Tab'), component_property='is_open'),
     Output(component_id=id('btn_openTabDiffuse'), component_property='children'),
     Output(component_id=id('btn_openTabDiffuse'), component_property='color'),
     Input(component_id=id('btn_openTabDiffuse'),component_property='n_clicks'),
-    State(component_id=id('collps_diffTab'), component_property='is_open'),
+    State(component_id=id('collps_Tab'), component_property='is_open'),
     prevent_initial_call=True
 )
 def invertTabVisibility( _ , previousState):
@@ -182,11 +182,12 @@ def addAllCoarseDiffuse(n_clicks):
 @callback(
     Output(component_id=id('offCanv_cite'), component_property='is_open'),
     Input(component_id=id('btn_citeHeader'),component_property='n_clicks'),
+    Input(component_id='citeDropdown', component_property='n_clicks'),
     State(component_id=id('offCanv_cite'), component_property='is_open'),
     prevent_initial_call=True
 )
-def invertCiteMenuVisibility(n_clicks, is_open):
-    if n_clicks:
+def invertCiteMenuVisibility(n_clicks, n_clicks_dropdown, is_open):
+    if n_clicks or n_clicks_dropdown:
         return not is_open
     return is_open
 
