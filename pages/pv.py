@@ -1,49 +1,46 @@
-from dash import dcc, Input, Output, State, callback
+from dash import dcc, html, Input, Output, State, callback
 import dash_bootstrap_components as dbc
 
 from pathlib import Path
-
 import pandas as pd
 
-import layoutFunctions as lf
-import callbackFunctions as cf
-import AbaTool
+from utils import dataManager as dm
+from utils import layoutFunctions as lf
+from utils import callbackFunctions as cf
 
 
 # ------------------------------------------------------------------------------
 # Initialize utility objects and useful functions
 # ------------------------------------------------------------------------------
 
-# Object for managing ABA area names and ontology
-A = AbaTool.Atlas()
-
-# Utility dict mapping area Ids to names
-nameMap = A.get_name_map()
-
-# iDify function that helps manage component id names. It preprends
+# id function that helps manage component id names. It pre-pends
 # the name of the page to a string so that writing ids specific for each page is easier 
 id = cf.id_factory('pv')          
 
 # Full path of the data folder where to load raw data
 dataFolder = Path(__file__).parent.parent.absolute() / 'data'
 
+# Load the Atlas dataFrame with all structures, acronyms, colors etc
+structuresDf = cf.loadStructuresDf(dataFolder/'structures.json')
+
 # ------------------------------------------------------------------------------
 # Load the necessary data
 # ------------------------------------------------------------------------------
 
-# Naming is a shorthand for PV _ Diffuse _ Coarse/Mid/Fine
-p_d_c = pd.read_csv(dataFolder / 'pv_diff_coarse.csv', header=[0,1], index_col=[0])
-p_d_m = pd.read_csv(dataFolder / 'pv_diff_mid.csv', header=[0,1], index_col=[0,1])
-p_d_f = pd.read_csv(dataFolder / 'pv_diff_fine.csv', header=[0,1], index_col=[0,1,2])
+# Metrics data for WFA
+D = dm.readSupplDataMetrics(dataFolder/'originalData/data_SD2.xlsx', removeAcronyms=True)
 
-
+# Coronal Slice Coordinates
+coronalCoordDfList = cf.loadAllSlices(dataFolder/'coordinates')
 
 # ------------------------------------------------------------------------------
 # Perform some preprocessing
 # ------------------------------------------------------------------------------
-coarseDict = cf.dataFrame_to_labelDict(p_d_c,'coarse',nameMap)
-midDict = cf.dataFrame_to_labelDict(p_d_m,'mid',nameMap)
-fineDict = cf.dataFrame_to_labelDict(p_d_f,'fine',nameMap)
+
+# Create lists of dictionaries {label:areaName, value=areaID} for populating dropDowns
+coarseDict = cf.dataFrame_to_labelDict(D['coarse'],'coarse',structuresDf)
+midDict = cf.dataFrame_to_labelDict(D['mid'],'mid',structuresDf)
+fineDict = cf.dataFrame_to_labelDict(D['fine'],'fine',structuresDf)
 
 
 
@@ -51,28 +48,44 @@ fineDict = cf.dataFrame_to_labelDict(p_d_f,'fine',nameMap)
 # LAYOUT
 # ------------------------------------------------------------------------------
 layout = dbc.Container([
-    lf.makeCitationOffCanvas(),
-    dbc.Row(lf.makeNavBar()),           # Navigation Bar
-    dbc.Row(lf.makePVHeader()),            # Big header
-    
-    # First portion (Diffuse Fluorescence)
-    dbc.Row([lf.makeSubtitle('Diffuse PV Fluorescence')]),
+    lf.make_CitationOffCanvas(id),
+    lf.make_MetricInfoModal(id),
+    dbc.Row(lf.make_NavBar()),                  # Navigation Bar
+    dbc.Row(lf.make_PvHeader(id)),             # Big header
+
+    # First portion (anatomical explorer)
     dbc.Row([
-        dbc.Col(lf.makeDiffuseHistogramSelectionMenu(id, coarseDict, midDict, fineDict),
-            xs=12,lg=4
+        dbc.Col(lf.make_AnatomicalExplorerSelectionMenu(id, staining='pv'),
+            xs=12,lg=3
         ),
         dbc.Col(
             dbc.Spinner(
-                dcc.Graph(id=id('hist_diffuse')),
+                dcc.Graph(
+                    figure=cf.makeAnatExplorerScatter(),
+                    id=id('scatterSlice'),
+                    config={'displaylogo':False}
+                ),
+                color='primary',
+            )
+        )
+    ], className = 'align-items-center'),
+
+    # Second portion (Histogram)
+    dbc.Row([lf.make_Subtitle('Comparative analysis')]),
+    dbc.Row([
+        dbc.Col(lf.make_MetricsHistogramSelectionMenu(id, coarseDict, midDict, fineDict,'pv'),
+            xs=12,lg=4, className='mt-5'
+        ),
+        dbc.Col(
+            dbc.Spinner(
+                dcc.Graph(id=id('hist_diffuse'), config={'displaylogo':False}),
                 color='primary'
             )
         )
     ]),
-    dbc.Row([lf.makeCollapsableTable(id)]),
+    dbc.Row([lf.make_CollapsableTable(id)]),
 
-    # Second portion (single PNNs)
-    dbc.Row([lf.makeSubtitle('Perineuronal Nets')]),
-    dbc.Row([lf.makeSubtitle('Anatomical explorer')]),
+    dbc.Row([],style={"margin-top": "500px"}),
 ])
 
 
@@ -80,26 +93,81 @@ layout = dbc.Container([
 # CALLBACKS
 # ------------------------------------------------------------------------------
 
-
 @callback(
     Output(component_id=id('hist_diffuse'), component_property='figure'),
-    Output(component_id=id('collps_diffTab'), component_property='children'),
+    Output(component_id=id('collps_Tab'), component_property='children'),
+    Input(component_id=id('drpD_histogMetric'), component_property='value'),
     Input(component_id=id('drpD_majorSubd'), component_property='value'),
     Input(component_id=id('drpD_addCoarse'), component_property='value'),
     Input(component_id=id('drpD_addMid'), component_property='value'),
     Input(component_id=id('drpD_addFine'), component_property='value'),
     Input(component_id=id('switch_sortDiff'), component_property='value')
 )
-def updateHistogram(maj_sel,addC_sel,addM_sel,addF_sel, sortRegions):
-    """Update the diffuse fluorescence histogram"""
-    combinedDf = cf.combineDiffuseDataframes(maj_sel,addC_sel,addM_sel,addF_sel,p_d_c,p_d_m,p_d_f)
-    aggrDf = cf.aggregateFluoDataframe(combinedDf, A)
+def updateHistogram(selMetric, maj_sel, addC_sel, addM_sel, addF_sel, sortRegions):
+    """
+    Update the diffuse fluorescence histogram
+    """
+    # Filter data for the selected metric only
+    slicedCoarse = D['coarse'].xs(selMetric, axis=1, level='params')
+    slicedMid = D['mid'].xs(selMetric, axis=1, level='params')
+    slicedFine = D['fine'].xs(selMetric, axis=1, level='params')
+    # Combine data from all the area selected from multiple menus
+    combinedDf = cf.combineDiffuseDataframes(maj_sel,addC_sel,addM_sel,addF_sel,
+        slicedCoarse,
+        slicedMid,
+        slicedFine)
+    # Aggregate to calculate Mean and SEM
+    aggrDf = cf.aggregateFluoDataframe(combinedDf, structuresDf)
     if sortRegions:
         aggrDf = aggrDf.sort_values(by='mean',ascending=False)
 
-    fig = cf.diffuseFluoHistogram(aggrDf)
+    # Create a new visualization and table and return them
+    fig = cf.update_diffuseFluoHistogram(aggrDf, selMetric, 'pv')
     tab = dbc.Table.from_dataframe(aggrDf.drop(columns=['color']), striped=True, bordered=True, hover=True)
     return fig, tab
+
+
+@callback(
+    Output(component_id=id('scatterSlice'), component_property='figure'),
+    State(component_id=id('scatterSlice'), component_property='figure'),
+    Input(component_id=id('drpD_anatomMetric'),component_property='value'),
+    Input(component_id=id('drpD_anatomCmap'),component_property='value'),
+    Input(component_id=id('slider_ap'),component_property='value'),
+)
+def updateAnatomicalExplorer(fig, selMetric, cmap, apIdx):
+    """
+    Update the anatomical explore plot with the data selected from the multiple
+    sliders and dropdown menus on the left.
+    """
+    # Select which dataset to show
+    data = D['mid'].xs(selMetric, axis=1, level='params')
+    # Get the correct limits to the colormap
+    min, max, = cf.getClimsAnatomicalExplorer(selMetric, staining='pv')
+
+    df = cf.mergeCoordinatesAndData(coronalCoordDfList[apIdx], data)
+    fig = cf.redrawAnatExplorerScatter(fig, df, cmap, min, max)
+
+    return fig
+
+
+@callback(
+    Output(component_id=id('collps_Tab'), component_property='is_open'),
+    Output(component_id=id('btn_openTabDiffuse'), component_property='children'),
+    Output(component_id=id('btn_openTabDiffuse'), component_property='color'),
+    Input(component_id=id('btn_openTabDiffuse'),component_property='n_clicks'),
+    State(component_id=id('collps_Tab'), component_property='is_open'),
+    prevent_initial_call=True
+)
+def invertTabVisibility( _ , previousState):
+    newState = not previousState
+    if newState:
+        text = 'Collapse Tabular Data'
+        color = 'info'
+    else:
+        text = 'Open Tabular Data'
+        color = 'primary'
+    return newState, text, color
+    
 
 @callback(
     Output(component_id=id('drpD_addCoarse'), component_property='value'),
@@ -109,3 +177,39 @@ def updateHistogram(maj_sel,addC_sel,addM_sel,addF_sel, sortRegions):
 def addAllCoarseDiffuse(n_clicks):
     coarseIDs = [x['value'] for x in coarseDict]
     return coarseIDs
+
+
+@callback(
+    Output(component_id=id('offCanv_cite'), component_property='is_open'),
+    Input(component_id=id('btn_citeHeader'),component_property='n_clicks'),
+    Input(component_id='citeDropdown', component_property='n_clicks'),
+    State(component_id=id('offCanv_cite'), component_property='is_open'),
+    prevent_initial_call=True
+)
+def invertCiteMenuVisibility(n_clicks, n_clicks_dropdown, is_open):
+    if n_clicks or n_clicks_dropdown:
+        return not is_open
+    return is_open
+
+
+@callback(
+    Output(component_id=id('modal_info'), component_property='is_open'),
+    Input(component_id=id('btn_info_anat'),component_property='n_clicks'),
+    Input(component_id=id('btn_info'),component_property='n_clicks'),
+    State(component_id=id('modal_info'), component_property='is_open'),
+)
+def invertModalInfoVisibility(n_clicks_anat, n_clicks, is_open):
+    if n_clicks or n_clicks_anat:
+        return not is_open
+    return is_open
+
+@callback(
+    Output(component_id=id('moreInfoCollapse'), component_property='is_open'),
+    Input(component_id=id('moreInfoIcon'), component_property='n_clicks'),
+    State(component_id=id('moreInfoCollapse'), component_property='is_open'),
+    prevent_initial_call=True
+)
+def invertMoreInfoVisibility(n_clicks, is_open):
+    if n_clicks:
+            return not is_open
+    return is_open
