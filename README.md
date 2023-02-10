@@ -1,6 +1,6 @@
 # PNN Atlas
 
-> A **free** and **open-source** atlas for Perineuronal Nets in the mouse brain.
+> 🧠 A **free** and **open-source** atlas for Perineuronal Nets in the mouse brain.
 >
 
 ## Installation on your computer
