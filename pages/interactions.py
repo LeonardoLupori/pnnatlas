@@ -4,9 +4,9 @@ import dash_bootstrap_components as dbc
 from pathlib import Path
 import pandas as pd
 
-from ..utils import dataManager as dm
-from ..utils import layoutFunctions as lf
-from ..utils import callbackFunctions as cf
+from utils import dataManager as dm
+from utils import layoutFunctions as lf
+from utils import callbackFunctions as cf
 
 # ------------------------------------------------------------------------------
 # Initialize utility objects and useful functions
@@ -51,6 +51,7 @@ fineDict = cf.dataFrame_to_labelDict(Dc['fine'],'fine',structuresDf)
 
 layout = dbc.Container([
     lf.make_CitationOffCanvas(id),
+    lf.make_AboutUsOffCanvas(id),
     lf.make_ColocInfoModal(id),
     dbc.Row(lf.make_NavBar()),                           # Navigation Bar
     dbc.Row(lf.make_InteractionHeader(id)),            # Big header
@@ -87,6 +88,7 @@ layout = dbc.Container([
         )
     ]),
     dbc.Row([lf.make_CollapsableTable(id)]),
+    dbc.Row([lf.make_CC_licenseBanner(id)]),
 
 
     dbc.Row([],style={"margin-top": "500px"}),
@@ -139,7 +141,6 @@ def updateHistogram(selMetric, maj_sel, addC_sel, addM_sel, addF_sel, sortRegion
     if sortRegions:
         aggrDf = aggrDf.sort_values(by='mean',ascending=False)
 
-    print(aggrDf)
     # Create a new visualization and table and return them
     fig = cf.update_colocHistogram(aggrDf, selMetric)
     tab = dbc.Table.from_dataframe(aggrDf.drop(columns=['color']), striped=True, bordered=True, hover=True)
@@ -178,10 +179,23 @@ def addAllColocHist(n_clicks):
 @callback(
     Output(component_id=id('offCanv_cite'), component_property='is_open'),
     Input(component_id=id('btn_citeHeader'),component_property='n_clicks'),
+    Input(component_id='citeDropdown', component_property='n_clicks'),
     State(component_id=id('offCanv_cite'), component_property='is_open'),
     prevent_initial_call=True
 )
-def invertCiteMenuVisibility(n_clicks, is_open):
+def invertCiteMenuVisibility(n_clicks, n_clicks_dropdown, is_open):
+    if n_clicks or n_clicks_dropdown:
+        return not is_open
+    return is_open
+
+
+@callback(
+    Output(component_id=id('offCanv_abtUs'), component_property='is_open'),
+    Input(component_id='aboutUsDropdown', component_property='n_clicks'),
+    State(component_id=id('offCanv_abtUs'), component_property='is_open'),
+    prevent_initial_call=True
+)
+def invertAboutusMenuVisibility(n_clicks, is_open):
     if n_clicks:
         return not is_open
     return is_open

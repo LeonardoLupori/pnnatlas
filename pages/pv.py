@@ -4,9 +4,9 @@ import dash_bootstrap_components as dbc
 from pathlib import Path
 import pandas as pd
 
-from ..utils import dataManager as dm
-from ..utils import layoutFunctions as lf
-from ..utils import callbackFunctions as cf
+from utils import dataManager as dm
+from utils import layoutFunctions as lf
+from utils import callbackFunctions as cf
 
 
 # ------------------------------------------------------------------------------
@@ -49,6 +49,7 @@ fineDict = cf.dataFrame_to_labelDict(D['fine'],'fine',structuresDf)
 # ------------------------------------------------------------------------------
 layout = dbc.Container([
     lf.make_CitationOffCanvas(id),
+    lf.make_AboutUsOffCanvas(id),
     lf.make_MetricInfoModal(id),
     dbc.Row(lf.make_NavBar()),                  # Navigation Bar
     dbc.Row(lf.make_PvHeader(id)),             # Big header
@@ -84,6 +85,7 @@ layout = dbc.Container([
         )
     ]),
     dbc.Row([lf.make_CollapsableTable(id)]),
+    dbc.Row([lf.make_CC_licenseBanner(id)]),
 
     dbc.Row([],style={"margin-top": "500px"}),
 ])
@@ -188,6 +190,18 @@ def addAllCoarseDiffuse(n_clicks):
 )
 def invertCiteMenuVisibility(n_clicks, n_clicks_dropdown, is_open):
     if n_clicks or n_clicks_dropdown:
+        return not is_open
+    return is_open
+
+
+@callback(
+    Output(component_id=id('offCanv_abtUs'), component_property='is_open'),
+    Input(component_id='aboutUsDropdown', component_property='n_clicks'),
+    State(component_id=id('offCanv_abtUs'), component_property='is_open'),
+    prevent_initial_call=True
+)
+def invertAboutusMenuVisibility(n_clicks, is_open):
+    if n_clicks:
         return not is_open
     return is_open
 

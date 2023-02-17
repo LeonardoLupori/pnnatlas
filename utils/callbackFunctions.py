@@ -326,7 +326,6 @@ def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
 
     return fig
 
-
 def combineDiffuseDataframes(major_selection, addCoarse_selection, addMid_selection, addFine_selection,
         coarseDf, midDf, fineDf):
     """
@@ -549,16 +548,7 @@ def update_IntScatter(fig, aggrDf, structDf, xStaining, xMetric, yStaining, yMet
     fig.update_yaxes(
         title=yLabel
     )
-
-    
-
-
     return fig
-
-
-def combineColocDataFrames(major_selection, addCoarse_selection, addMid_selection, addFine_selection,
-        coarseDf, midDf, fineDf):
-        pass
 
 def update_colocHistogram(aggrDf, selMetric):
 
@@ -601,3 +591,126 @@ def update_colocHistogram(aggrDf, selMetric):
         title_font = {"size":16}
     )
     return fig
+
+
+# Genes
+# ------------------------------------------------------------------------------
+
+def getMetricDf(selMetric, wfa, pv):
+    if selMetric == 'wfa_energy':
+        return wfa['energy']
+    elif selMetric == 'wfa_diffuseFluo':
+        return wfa['diffuseFluo']
+    elif selMetric == 'pv_energy':
+        return pv['energy']
+    else:
+        return []
+
+def combineGenesDf(selGene, selMetric, ishData, structuresDf):
+
+    # Prepare the Df with staining metric data
+    metricDf = pd.DataFrame(selMetric)
+    metricDf.columns=['metric']
+    metric = metricDf.reset_index()
+
+    # Prepare the Df with gene expression data
+    ishData.index.name = 'mid'
+    ish = pd.DataFrame(ishData.loc[selGene])
+    ish.columns = ['geneExp']
+
+    # Merge the 2 dataframes
+    merged = metric.join(ish, on='mid')
+
+    # Add info about anatomical structures
+    structuresDf = loadStructuresDf('data/structures.json')
+    structuresDf = structuresDf[['acronym', 'name', 'rgb_plotly']]
+    merged = merged.join(structuresDf, on='mid')
+
+    merged = merged.set_index(['coarse','mid'])
+    merged = merged.drop(1009, level='mid')
+
+    return merged
+
+def update_GenesScatter(fig, combinedDfCorrDf, structureDf, geneName):
+    # Convert back the figure in a go object
+    fig = go.Figure(fig)
+    # remove all present data
+    fig.data = []
+
+    # Draw a Scatter trace for each area in the dataFrame
+    for coarse, new_df in combinedDfCorrDf.groupby(level='coarse'):
+        thisTrace = go.Scatter(
+            x = new_df['geneExp'], y = new_df['metric'],
+            name = structureDf.loc[coarse]['name'],
+            marker_color = new_df['rgb_plotly'],
+            mode='markers',
+            marker = dict(
+                size=13,
+                line_width=1,
+                opacity=0.85,
+            ),
+            customdata  = np.stack((new_df['name'], new_df['acronym']), axis=-1),
+            hovertemplate= "<b>%{customdata[1]}</b>" + "<br>" +
+                "<i>%{customdata[0]}</i>" + "<br>" + 
+                f"{structureDf.loc[coarse]['name']}" + "<br>" +
+                f"<b>Staining Metric</b>:" "%{x:.3f}" + "<br>" + 
+                f"<b>Gene Expression</b>:" + "%{y:.3f}" +
+                "<extra></extra>",
+            
+        )
+        fig.add_trace(thisTrace)
+
+    # Sort traces alphabetically
+    fig.data = sorted(fig.data, key=lambda d: d['name']) 
+
+    fig.update_layout(title=geneName)
+
+    return fig
+
+def make_GeneScatter():
+    fig = go.Figure()
+
+    fig.update_layout(
+        template='none',
+        height=650,
+        legend=dict(
+            orientation="v",
+        ),
+        font=dict(
+            size=14,
+        ),
+        margin=dict(
+                t=30,
+            )
+    )
+    # Customize X axis
+    fig.update_xaxes(
+        type="log",
+        title="Gene Expression Energy"
+    )
+    # Customize Y axis
+    fig.update_yaxes(
+        type="log",
+        scaleanchor = "x",  
+        scaleratio = 1,
+        title="Staining Metric"
+    )
+    return fig
+
+def getGeneInfoTable(selMetric, selGene, geneDict):
+
+    if selMetric=='wfa_energy':
+        data = geneDict['wfa_en']
+    elif selMetric=='wfa_diffuseFluo':
+        data = geneDict['wfa_diff']
+    elif selMetric=='pv_energy':
+        data = geneDict['pv_en']    
+    else:
+        return []
+
+    data = data.loc[data['gene_AGEA_id']==selGene]
+    geneName = data.iloc[0]['gene_name']
+    data = data.T.reset_index()
+    data.columns = ['Parameter', 'Value']
+
+    return data, geneName

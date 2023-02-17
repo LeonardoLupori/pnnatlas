@@ -51,11 +51,37 @@ def readSupplDataMetrics(pathToFile:str, removeAcronyms:bool=False):
     return dfDict
 
 
-def readSupplDataColoc(pathToFile:str):
-    # TODO
-    pass
+def readMetricsDataForGenes(pathToFile:str):
+    # Read the medium redolution data (average across mice)
+    metricDf = pd.read_excel(
+        pathToFile,
+        sheet_name=3,
+        header=[0],
+        index_col=[0,1,2,3])
 
-def readSupplDataGenes(pathToFile:str):
-    # TODO
-    pass
+    metricDf.index = metricDf.index.droplevel(['coarse_acro','mid_acro'])
 
+
+    return metricDf
+
+
+def readGenesCorrelationSupplData(pathToFile:str):
+
+    wfa_en = pd.read_excel(pathToFile,
+        sheet_name=0,
+        header=0,
+        index_col=0)
+    
+    wfa_diff = pd.read_excel(pathToFile,
+        sheet_name=2,
+        header=0,
+        index_col=0)
+
+    pv_en = pd.read_excel(pathToFile,
+        sheet_name=1,
+        header=0,
+        index_col=0)
+
+    dfDict = {"wfa_en":wfa_en, "wfa_diff":wfa_diff, "pv_en":pv_en}
+
+    return dfDict

@@ -22,7 +22,7 @@ app.validation_layout = html.Div([
     wfa.layout,
     pv.layout,
     interactions.layout,
-    # genes.layout,
+    genes.layout,
     blankPage.layout
 ])
 

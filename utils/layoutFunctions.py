@@ -124,6 +124,44 @@ def make_PvHeader(idFunc):
     )
     return header
 
+def make_GenesHeader(idFunc):
+    """
+    Makes the header for the Genes page
+    """
+    # Main Title
+    header = html.Div(
+        dbc.Container([
+            html.Div([
+                html.H2("Coorelation with genes", className="display-4"),
+                dbc.Button("Cite", id=idFunc("btn_citeHeader"),color="success", outline=True)
+            ], className='d-flex justify-content-between align-items-center mb-0'),
+            
+            html.Hr(className="mt-0 mb-1"),
+            html.Div([
+                html.P("Explore genes that are correlated or anticorrelated with PNNs or PV"),
+                html.H4(id=idFunc('moreInfoIcon'), className="fa-solid fa-book-open ms-3 mt-1 primary")
+            ], className='d-flex mb-0'),
+            dbc.Collapse(
+                html.Div([
+                    "This page shows interactive visualizations of gene expression data",
+                    "(from the Allen Institute ISH dataset) for all areas of the brain",
+                    " in correlation with WFA and PV metrics.",
+                    html.Br(), 
+                    html.Br(),"For detailed information of the procedure, see ",
+                    html.A("here", href="https://www.biorxiv.org/content/10.1101/2023.01.24.525313", target="_blank")
+                ]),
+                id=idFunc("moreInfoCollapse"),
+                is_open=False,
+            ),
+            dbc.Tooltip("More info.", target=idFunc("moreInfoIcon"), className='ms-1')
+            ],
+            fluid=True,
+            className="py-1 bg-light rounded-3",
+        ),
+        className="p-0 my-1",
+    )
+    return header
+
 def make_InteractionHeader(idFunc):
     """
     Makes the header for the WFA page
@@ -143,33 +181,6 @@ def make_InteractionHeader(idFunc):
             className="py-1 bg-light rounded-3",
         ),
         className="p-0 my-1",
-    )
-    return header
-
-def make_PVHeader():
-    """
-    Makes the header for the PV page
-    """
-    # Main Title
-    header = html.Div(
-        dbc.Container([
-                html.H1("Parvalbumin", className="display-3"),
-                html.P("An atlas for PV-positive cells in the mouse brain",
-                    className="lead",
-                ),
-                html.Hr(className="my-2"),
-                html.P(["Mouse brains were stained with Weisteria Floribunda Agglutinin (WFA). "
-                "Brain sections were aligned to the ",
-                html.A("Allen Brain Atlas", href="https://atlas.brain-map.org/", target="_blank"),
-                " Common Coordinate Framework version3 (CCFv3) and for each brain area:"
-                ]),
-                html.P(dbc.Button("Cite", id="btn_citeHeader",color="primary"), className="lead"
-                ),
-            ],
-            fluid=True,
-            className="py-3 bg-light rounded-3",
-        ),
-        className="p-0 my-3",
     )
     return header
 
@@ -446,6 +457,61 @@ def make_ColocalizationHistogramSelectionMenu(idFunc, coarseDict, midDict, fineD
     ])
     return menu
 
+def make_GeneCorrSelectionMenu(idFunc, genesDf):
+    """
+    Makes the left-side menu with dropdowns for the histogram of the multiple staining metrics
+    """
+    menu = html.Div([
+        html.H6(["Select a gene ID:"],className='my-1'),
+        html.Div([
+            html.Div([
+                dcc.Dropdown(
+                    id=idFunc('drpD_geneSelect'),
+                    options=getGenesLabels(genesDf),
+                    value=11382, # Default ID for Aggrecan
+                    multi=False,
+                    clearable=False,
+                )],
+                style={'flex-grow':'1'},
+            ),
+
+            html.Div([
+                dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info'))], 
+            )],
+            className='mt-1 mb-1', 
+            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+        ),
+
+        html.Div([
+        dbc.Button("Open Gene Info",
+            id=idFunc("btn_openTabDiffuse"),
+            className="mb-1",
+            size='sm',
+            outline=True,
+            color="primary",
+        ),
+        dbc.Collapse(
+            id=idFunc("collps_Tab"),
+            is_open=False,
+        )],className='mt-3 mb-5'),
+
+        html.H6(["Correlation with:"],className='my-1'),
+        dcc.Dropdown(
+            id=idFunc('drpD_metricSelector'),
+            options = getMetricsForGenesLabels(),
+            value='wfa_energy', # Defaults to Isocortex
+            multi = False,
+            clearable=False,
+            className='my-1 mb-3'
+        ),
+
+        # TOOLTIPS
+        dbc.Tooltip("Select the gene that you want to correlate staining metrics with.",
+            target=idFunc("drpD_geneSelect"),placement="right"
+        ),
+        dbc.Tooltip("Select what staining metric to use for correlation.",target=idFunc("drpD_metricSelector"),placement="right"),
+    ])
+    return menu
 
 def make_CollapsableTable(idFunc):
     """
@@ -542,13 +608,53 @@ def make_CitationOffCanvas(idFunc):
                     ),
                 ),
             ],
-            style={"width": "18rem"},className='mt-5'
-        )
+            style={"width": "18rem"},className='mt-5'),
+            make_CC_licenseBanner(idFunc),
         ]),
         
         id=idFunc("offCanv_cite"),
         title="Cite us",
         is_open=False,
+    )
+    return offcanvas
+
+def make_AboutUsOffCanvas(idFunc):
+    offcanvas = dbc.Offcanvas(
+        html.P([
+            "This work was produced in Tommaso Pizzorusso's Lab thanks to the support of the following institutions: ",
+            html.Br(),
+            dbc.ListGroup([
+                dbc.ListGroupItem(
+                    html.Div([
+                        "Scuola Normale Superiore",
+                        html.A(className="fa-solid fa-arrow-up-right-from-square px-3", href='https://www.sns.it/en', target='_blank')
+                    ], className='d-flex w-100 justify-content-between align-items-center'),
+                    className='rounded-3 py2'),
+                dbc.ListGroupItem(
+                    html.Div([
+                        "Institute of Information Science and Technologies (ISTI-CNR)",
+                        html.A(className="fa-solid fa-arrow-up-right-from-square px-3", href='https://www.iit.cnr.it/en/', target='_blank')
+                    ], className='d-flex w-100 justify-content-between align-items-center'),
+                    className='rounded-3 py2'),
+                dbc.ListGroupItem(
+                    html.Div([
+                        "Institute of Neuroscience (IN-CNR)",
+                        html.A(className="fa-solid fa-arrow-up-right-from-square px-3", href='http://www.in.cnr.it/index.php/en/', target='_blank')
+                    ], className='d-flex w-100 justify-content-between align-items-center'),
+                    className='rounded-3 py2'),
+                dbc.ListGroupItem(
+                    html.Div([
+                        "University of Pisa",
+                        html.A(className="fa-solid fa-arrow-up-right-from-square px-3", href='https://www.unipi.it/index.php/english', target='_blank')
+                    ], className='d-flex w-100 justify-content-between align-items-center'),
+                    className='rounded-3 py2'),
+            ], flush=True, className='mt-5'),
+        ]),
+        
+        id=idFunc("offCanv_abtUs"),
+        title="More about us",
+        is_open=False,
+        placement='end',
     )
     return offcanvas
 
@@ -634,8 +740,6 @@ def make_MetricInfoModal(idFunc):
 
     return modal
 
-
-
 def make_ColocInfoModal(idFunc):
 
     pvPositivePnnCard = dbc.Card([
@@ -683,7 +787,57 @@ def make_ColocInfoModal(idFunc):
 
     return modal
 
+def make_GeneInfoModal(idFunc):
 
+    genesCard = dbc.Card([
+        dbc.CardBody([
+            # html.H5("Gene ID", className="card-title primary"),
+            html.P(html.I("Gene ID used in the AGEA dataset")),
+            html.Hr(className="mb-1"),
+            html.P(["As a measure of gene expression we use the metric ", html.B("expression energy"), 
+                " defined in Lein et al. 2007. "],
+                className="card-text")]
+        )],
+        style={'height':'100%'},
+        outline=True,
+        color='info',
+    )
+
+    modal = dbc.Modal([
+            dbc.ModalHeader(dbc.ModalTitle("Gene ID")),
+            dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col([genesCard]),
+                ], className='')]
+        )],
+        size='lg',
+        id=idFunc('modal_info')
+    )
+
+    return modal
+
+def make_CC_licenseBanner(idFunc):
+    banner = []
+
+    banner = html.Div([
+        html.Hr(className="mt-2 mb-2"),
+        html.P(["Web-app developed by ",
+            dcc.Link("Leonardo Lupori.",
+                href="https://www.luporileonardo.com/",
+                target="_blank", className="me-3"),
+        "See source code ",
+            dcc.Link("here",
+                href="https://github.com/LeonardoLupori/pnnatlas",
+                target="_blank"),
+        ]),
+        html.A([
+            html.Img([], alt="Creative Commons License",  
+                src="https://i.creativecommons.org/l/by/4.0/88x31.png")], 
+            rel="license", href="http://creativecommons.org/licenses/by/4.0/", className="border-width:0 me-2"),
+        "This work is licensed under a ",
+        html.A(["Creative Commons Attribution 4.0 International License"], rel='license', href="http://creativecommons.org/licenses/by/4.0/")
+    ], id=idFunc("licenseBanner"), className='pt-5')
+    return banner
 
 # ------------------------------------------------------------------------------
 # 
@@ -721,3 +875,18 @@ def getMetricsLabels(staining='wfa'):
 
     return labels
 
+def getGenesLabels(genesDf):
+    genesDf = genesDf.sort_values(by='gene_acronym')
+    labels = []
+    for idx, row in genesDf.iterrows():
+        temp = {'label':idx,'value':row['gene_AGEA_id']}
+        labels.append(temp)
+    return labels
+
+def getMetricsForGenesLabels():
+    labels = [
+        {'label':'PNN Energy','value':'wfa_energy'},
+        {'label':'WFA Diffuse Fluorescnece','value':'wfa_diffuseFluo'},
+        {'label':'PV Energy','value':'pv_energy'},
+    ]
+    return labels
