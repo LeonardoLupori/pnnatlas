@@ -4,9 +4,9 @@ import dash_bootstrap_components as dbc
 from pathlib import Path
 import pandas as pd
 
-from utils import dataManager as dm
-from utils import layoutFunctions as lf
-from utils import callbackFunctions as cf
+from ..utils import dataManager as dm
+from ..utils import layoutFunctions as lf
+from ..utils import callbackFunctions as cf
 
 # ------------------------------------------------------------------------------
 # Initialize utility objects and useful functions
@@ -125,7 +125,7 @@ def invertAboutusMenuVisibility(n_clicks, is_open):
     if n_clicks:
         return not is_open
     return is_open
-    
+
 
 
 @callback(
