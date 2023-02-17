@@ -132,7 +132,7 @@ def make_GenesHeader(idFunc):
     header = html.Div(
         dbc.Container([
             html.Div([
-                html.H2("Coorelation with genes", className="display-4"),
+                html.H2("Correlation with Genes", className="display-4"),
                 dbc.Button("Cite", id=idFunc("btn_citeHeader"),color="success", outline=True)
             ], className='d-flex justify-content-between align-items-center mb-0'),
             
@@ -633,7 +633,7 @@ def make_AboutUsOffCanvas(idFunc):
                 dbc.ListGroupItem(
                     html.Div([
                         "Institute of Information Science and Technologies (ISTI-CNR)",
-                        html.A(className="fa-solid fa-arrow-up-right-from-square px-3", href='https://www.iit.cnr.it/en/', target='_blank')
+                        html.A(className="fa-solid fa-arrow-up-right-from-square px-3", href='https://www.isti.cnr.it/en/', target='_blank')
                     ], className='d-flex w-100 justify-content-between align-items-center'),
                     className='rounded-3 py2'),
                 dbc.ListGroupItem(

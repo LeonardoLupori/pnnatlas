@@ -622,7 +622,6 @@ def combineGenesDf(selGene, selMetric, ishData, structuresDf):
     merged = metric.join(ish, on='mid')
 
     # Add info about anatomical structures
-    structuresDf = loadStructuresDf('data/structures.json')
     structuresDf = structuresDf[['acronym', 'name', 'rgb_plotly']]
     merged = merged.join(structuresDf, on='mid')
 
