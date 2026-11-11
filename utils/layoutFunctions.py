@@ -74,7 +74,7 @@ def make_WfaHeader(idFunc):
                     "This page shows interactive visualizations of PNN data in the brain of ",
                     "adult mice", html.Br(), "Data (mean and SEM) come from seven mice.", 
                     html.Br(),"For detailed information of the procedure, see ",
-                    html.A("here", href="https://www.biorxiv.org/content/10.1101/2023.01.24.525313", target="_blank")
+                    html.A("here", href="https://doi.org/10.1016/j.celrep.2023.112788", target="_blank")
                 ]),
                 id=idFunc("moreInfoCollapse"),
                 is_open=False,
@@ -110,7 +110,7 @@ def make_PvHeader(idFunc):
                     "This page shows interactive visualizations of PV data in the brain of ",
                     "adult mice", html.Br(), "Data (mean and SEM) come from seven mice.", 
                     html.Br(),"For detailed information of the procedure, see ",
-                    html.A("here", href="https://www.biorxiv.org/content/10.1101/2023.01.24.525313", target="_blank")
+                    html.A("here", href="https://doi.org/10.1016/j.celrep.2023.112788", target="_blank")
                 ]),
                 id=idFunc("moreInfoCollapse"),
                 is_open=False,
@@ -148,7 +148,7 @@ def make_GenesHeader(idFunc):
                     " in correlation with WFA and PV metrics.",
                     html.Br(), 
                     html.Br(),"For detailed information of the procedure, see ",
-                    html.A("here", href="https://www.biorxiv.org/content/10.1101/2023.01.24.525313", target="_blank")
+                    html.A("here", href="https://doi.org/10.1016/j.celrep.2023.112788", target="_blank")
                 ]),
                 id=idFunc("moreInfoCollapse"),
                 is_open=False,
@@ -595,13 +595,13 @@ def make_CitationOffCanvas(idFunc):
                 dbc.CardImgOverlay(
                     dbc.CardBody(
                         [
-                            html.H4("BioRxiv", className="card-title"),
+                            html.H4("Cell Reports", className="card-title"),
                             html.P(
-                                "Check out our preprint here!",
+                                "Check out our paper here!",
                                 className="card-text",
                             ),
-                            dcc.Link([dbc.Button("Go to BioRxiv", color="primary")],
-                                href="https://www.biorxiv.org/content/10.1101/2023.01.24.525313",
+                            dcc.Link([dbc.Button("Go to Cell Reports", color="primary")],
+                                href="https://doi.org/10.1016/j.celrep.2023.112788",
                                 target="_blank"),
                             
                         ],
@@ -822,9 +822,14 @@ def make_CC_licenseBanner(idFunc):
     banner = html.Div([
         html.Hr(className="mt-2 mb-2"),
         html.P(["Web-app developed by ",
-            dcc.Link("Leonardo Lupori.",
-                href="https://www.luporileonardo.com/",
-                target="_blank", className="me-3"),
+            dcc.Link("Leonardo Lupori",
+                href="https://github.com/LeonardoLupori",
+                target="_blank"),
+            " and maintained by ",
+            dcc.Link("Valentino Totaro",
+                href="https://github.com/valtot",
+                target="_blank"),
+            html.Span(".", className="me-3"),
         "See source code ",
             dcc.Link("here",
                 href="https://github.com/LeonardoLupori/pnnatlas",

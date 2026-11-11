@@ -459,7 +459,7 @@ def intScattAggregateData(structuresDf, xData, yData, zScore):
     yData = yData.aggregate(func=['mean'], axis=1)
     structuresDf = structuresDf[['name','acronym','rgb_plotly']]
 
-    merged = xData.join(yData, how='inner', lsuffix='_x', rsuffix='_y')
+    merged = xData.join(yData, how='inner', suffixes=('_x', '_y'))
     merged = merged.join(structuresDf, on='mid', how='left')
     merged = merged.drop(1009, level='mid')
 

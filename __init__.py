@@ -9,7 +9,7 @@ app = Dash(__name__,
 )
 
 indexLayout = html.Div([
-    dcc.Location(id='url', pathname='/wfa', refresh=False),
+    dcc.Location(id='url', refresh=False),
     html.Div(id='page-content')
 ])
 
@@ -34,7 +34,7 @@ app.layout = indexLayout
     Input('url', 'pathname')
 )
 def display_page(pathname):
-    if pathname == '/wfa':
+    if pathname in ('/', '/wfa'):
         return wfa.layout
     elif pathname == '/pv':
         return pv.layout
