@@ -249,8 +249,9 @@ def redrawAnatExplorerScatter(fig, dataFrame, cmap, vmin, vmax):
     # Add the color column to the dataframe based on the colormap and vmin vmax
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
     mapper = cm.ScalarMappable(norm=norm, cmap=cmap)
-    rgb = mapper.to_rgba(dataFrame['mean'])
-    rgb[rgb == 1] = 0.999
+    # Use 0-255 integer channels: fractional "rgb(0.2,0.5,0.9)" strings are
+    # rendered as black by recent versions of plotly.js
+    rgb = mapper.to_rgba(dataFrame['mean'], bytes=True)
     rgb = [f'rgb({x[0]},{x[1]},{x[2]})' for x in rgb]
     dataFrame['color'] = rgb
 

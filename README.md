@@ -14,14 +14,6 @@ Follow the steps on this [tutorial page](docs/01_installation.md) to install the
 
 ### Requirements
 
-- Python 3.10
-- Numpy 1.22.3  
-`pip install numpy`
-- matplotlib 3.5.2  
-`pip install matplotlib`
-- Pandas 1.4.2  
-`pip install pandas`
-- Dash 2.4.1  
-`pip install dash`
-- Dash Bootstrap Components 1.1.0  
-`pip install dash-bootstrap-components`
+- Python >= 3.11 (tested with Python 3.12)
+- All the required packages, with tested versions, are listed in [requirements.txt](requirements.txt):  
+`pip install -r requirements.txt`

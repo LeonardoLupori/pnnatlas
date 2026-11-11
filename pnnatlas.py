@@ -1,6 +1,6 @@
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
-from pages import wfa, genes, pv, blankPage, interactions
+from .pages import wfa, genes, pv, blankPage, interactions
 
 
 app = Dash(__name__,
@@ -54,4 +54,4 @@ server = app.server
 # This will only be executed during debug when run locally, since WSGI does not 
 # run this as __main__ but only takes the "server" variable
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run(debug=True)

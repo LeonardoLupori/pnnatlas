@@ -24,11 +24,11 @@ If you are **experienced** with Python, you can just follow the steps in a short
 - Go inside the newly created folder:  
 `cd ./pnnatlas`
 - Create a new conda environment to keep things tidy:  
-`conda create -n pnnatlas Python==3.10`
+`conda create -n pnnatlas python=3.12`
 - Activate the newly created environment:  
 `conda activate pnnatlas`
 - Install the required packages:  
-`conda install --file requirements.txt`
+`pip install -r requirements.txt`
 - Run the atlas:  
 `python -m pnnatlas.py`
 - The script will create a local server and will print its address in the terminal (usually `http://127.0.0.1:8050/`). Open that address with any browser and you should be able to navigate the webapp.
