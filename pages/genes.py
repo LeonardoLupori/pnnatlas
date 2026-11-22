@@ -67,7 +67,7 @@ layout = dbc.Container([
     # dbc.Row([lf.make_CollapsableTable(id)]),
     dbc.Row([lf.make_CC_licenseBanner(id)]),
 
-    dbc.Row([],style={"margin-top": "500px"}),
+    dbc.Row([],style={"marginTop": "500px"}),
 ])
 
 

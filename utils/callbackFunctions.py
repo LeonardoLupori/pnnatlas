@@ -6,6 +6,7 @@ import matplotlib as mpl
 import matplotlib.cm as cm
 import pandas as pd
 import os
+from functools import lru_cache
 
 def id_factory(page: str):
     def func(_id: str):
@@ -87,12 +88,15 @@ def emptyMetricsDf():
     emptyDf = pd.DataFrame(columns=['regionName','acronym','regionID','mean','sem','color'])
     return emptyDf
 
+@lru_cache(maxsize=None)
 def loadStructuresDf(structuresPath):
     """
     Loads the structures json as a DataFrame and performs some processing
     to make it more usable.
     It sets the region ID as the index of the df and creates a column 'rgb_plotly'
     with the color of that region in the plotly format.
+    The result is cached and shared between pages, so callers must not modify
+    it in place.
     """
     # Load the file
     structuresDf = pd.read_json(structuresPath)
@@ -128,46 +132,31 @@ def calculateGraphHeight(numRows):
         height = numRows*20
     return height
 
+# Default colormap limits (vmin, vmax) of the anatomical explorer for each staining and metric
+_ANAT_EXPLORER_CLIMS = {
+    'wfa': {'density': (0, 120), 'intensity': (0, 0.7), 'energy': (0, 2.5), 'diffuseFluo': (0, 2.3)},
+    'pv':  {'density': (0, 200), 'intensity': (0, 0.7), 'energy': (0, 3),   'diffuseFluo': (0, 2.2)},
+}
+
 def getClimsAnatomicalExplorer(selMetric, staining='wfa'):
     """
     Based on the selected metric this function returns reasonable default values
-    to use to set various properties of slider for min and max in the anatomical explorer
+    (vmin, vmax) for the colormap of the anatomical explorer
     """
-    if staining =='wfa':
-        if selMetric=='density':
-            min = 0
-            max = 120
-        elif selMetric=='intensity':
-            min = 0
-            max = 0.7
-        elif selMetric=='energy':
-            min = 0
-            max = 2.5
-        elif selMetric=='diffuseFluo':
-            min = 0
-            max = 2.3
-    elif staining == 'pv':
-        if selMetric=='density':
-            min = 0
-            max = 200
-        elif selMetric=='intensity':
-            min = 0
-            max = 0.7
-        elif selMetric=='energy':
-            min = 0
-            max = 3
-        elif selMetric=='diffuseFluo':
-            min = 0
-            max = 2.2
+    try:
+        return _ANAT_EXPLORER_CLIMS[staining][selMetric]
+    except KeyError:
+        raise ValueError(f"Unknown staining/metric combination: {staining}/{selMetric}") from None
 
-    return min,max
-
+@lru_cache(maxsize=None)
 def loadAllSlices(folderPath:str):
     """
     loadAllSlices(folderPath)
 
-    Loads all the json files in a folder in a list of pandas dataframes and 
-    returns the list
+    Loads all the json files in a folder in a list of pandas dataframes and
+    returns the list.
+    The result is cached and shared between pages, so callers must not modify
+    the returned dataframes in place.
     """
     fileNames = sorted(os.listdir(folderPath))
     dfList = []
@@ -184,7 +173,7 @@ def selectData(dataWfa, dataPv, selStaining, selMetric, resolution):
     elif selStaining=='pv':
         output = dataPv[resolution].xs(selMetric, axis=1, level='params')
         return output
-    return []
+    raise ValueError(f"Unknown staining: {selStaining}")
 
 
 # ------------------------------------------------------------------------------
@@ -402,7 +391,7 @@ def update_diffuseFluoHistogram(aggrDf, selMetric='diffuseFluo', staining='wfa')
     if aggrDf.empty:
         return emptyGraph()
 
-    # Assemble a dict that links regiona names to colors
+    # Assemble a dict that links region names to colors
     colorDict = {k:v for (k,v) in zip(aggrDf['regionName'], aggrDf['color'])}
 
     # Create the barplot
@@ -455,11 +444,11 @@ def update_diffuseFluoHistogram(aggrDf, selMetric='diffuseFluo', staining='wfa')
 # ------------------------------------------------------------------------------
 def intScattAggregateData(structuresDf, xData, yData, zScore):
     
-    xData = xData.aggregate(func=['mean'], axis=1)
-    yData = yData.aggregate(func=['mean'], axis=1)
+    xData = xData.aggregate(func=['mean'], axis=1).rename(columns={'mean':'mean_x'})
+    yData = yData.aggregate(func=['mean'], axis=1).rename(columns={'mean':'mean_y'})
     structuresDf = structuresDf[['name','acronym','rgb_plotly']]
 
-    merged = xData.join(yData, how='inner', suffixes=('_x', '_y'))
+    merged = xData.join(yData, how='inner')
     merged = merged.join(structuresDf, on='mid', how='left')
     merged = merged.drop(1009, level='mid')
 
@@ -557,7 +546,7 @@ def update_colocHistogram(aggrDf, selMetric):
     if aggrDf.empty:
         return emptyGraph()
 
-    # Assemble a dict that links regiona names to colors
+    # Assemble a dict that links region names to colors
     colorDict = {k:v for (k,v) in zip(aggrDf['regionName'], aggrDf['color'])}
 
     # Create the barplot
@@ -604,8 +593,7 @@ def getMetricDf(selMetric, wfa, pv):
         return wfa['diffuseFluo']
     elif selMetric == 'pv_energy':
         return pv['energy']
-    else:
-        return []
+    raise ValueError(f"Unknown metric: {selMetric}")
 
 def combineGenesDf(selGene, selMetric, ishData, structuresDf):
 
@@ -614,10 +602,10 @@ def combineGenesDf(selGene, selMetric, ishData, structuresDf):
     metricDf.columns=['metric']
     metric = metricDf.reset_index()
 
-    # Prepare the Df with gene expression data
-    ishData.index.name = 'mid'
+    # Prepare the Df with gene expression data (without modifying the shared ishData)
     ish = pd.DataFrame(ishData.loc[selGene])
     ish.columns = ['geneExp']
+    ish.index.name = 'mid'
 
     # Merge the 2 dataframes
     merged = metric.join(ish, on='mid')
@@ -651,10 +639,10 @@ def update_GenesScatter(fig, combinedDfCorrDf, structureDf, geneName):
             ),
             customdata  = np.stack((new_df['name'], new_df['acronym']), axis=-1),
             hovertemplate= "<b>%{customdata[1]}</b>" + "<br>" +
-                "<i>%{customdata[0]}</i>" + "<br>" + 
+                "<i>%{customdata[0]}</i>" + "<br>" +
                 f"{structureDf.loc[coarse]['name']}" + "<br>" +
-                f"<b>Staining Metric</b>:" "%{x:.3f}" + "<br>" + 
-                f"<b>Gene Expression</b>:" + "%{y:.3f}" +
+                "<b>Gene Expression</b>: " + "%{x:.3f}" + "<br>" +
+                "<b>Staining Metric</b>: " + "%{y:.3f}" +
                 "<extra></extra>",
             
         )
@@ -704,9 +692,9 @@ def getGeneInfoTable(selMetric, selGene, geneDict):
     elif selMetric=='wfa_diffuseFluo':
         data = geneDict['wfa_diff']
     elif selMetric=='pv_energy':
-        data = geneDict['pv_en']    
+        data = geneDict['pv_en']
     else:
-        return []
+        raise ValueError(f"Unknown metric: {selMetric}")
 
     data = data.loc[data['gene_AGEA_id']==selGene]
     geneName = data.iloc[0]['gene_name']

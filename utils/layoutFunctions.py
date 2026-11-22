@@ -1,12 +1,10 @@
-from cProfile import label
-from pydoc import classname
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 
 
 # ------------------------------------------------------------------------------
 # make_ FUNCTIONS
-# These functions are callse only once to create the backbone of the graphical 
+# These functions are called only once to create the backbone of the graphical 
 # plots and elements. Then each element is updated based on callbacks that call 
 # "update_" functions. 
 # ------------------------------------------------------------------------------
@@ -164,7 +162,7 @@ def make_GenesHeader(idFunc):
 
 def make_InteractionHeader(idFunc):
     """
-    Makes the header for the WFA page
+    Makes the header for the Interactions page
     """
     # Main Title
     header = html.Div(
@@ -295,13 +293,13 @@ def make_MetricsHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict, st
                     multi = False,
                     clearable=False,
                 )],
-                style={'flex-grow':'1'},
+                style={'flexGrow':'1'},
             ),
             html.Div([
                 dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info'))], 
             )],
             className='mt-1 mb-5', 
-            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+            style={'display':'flex','flexDirection':'row', 'columnGap':'5px'}
         ),
         html.H6(["Select a major brain subdivision:"],className='my-1'),
         dcc.Dropdown(
@@ -319,13 +317,13 @@ def make_MetricsHistogramSelectionMenu(idFunc, coarseDict, midDict, fineDict, st
                     options = coarseDict,
                     multi = True,
                 )],
-                style={'flex-grow':'1'},
+                style={'flexGrow':'1'},
             ),
             html.Div([
                 dbc.Button("All",id=idFunc('btn_allMajorDiff'))], 
             )],
             className='mt-1 mb-3', 
-            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+            style={'display':'flex','flexDirection':'row', 'columnGap':'5px'}
         ),
         html.H6(["Add ", html.B("mid-ontology"), " region(s):"],className='my-1'),
         dcc.Dropdown(
@@ -386,13 +384,13 @@ def make_ColocalizationHistogramSelectionMenu(idFunc, coarseDict, midDict, fineD
                     multi = False,
                     clearable=False,
                 )],
-                style={'flex-grow':'1'},
+                style={'flexGrow':'1'},
             ),
             html.Div([
                 dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info'))], 
             )],
             className='mt-1 mb-5', 
-            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+            style={'display':'flex','flexDirection':'row', 'columnGap':'5px'}
         ),
         html.H6(["Select a major brain subdivision:"],className='my-1'),
         dcc.Dropdown(
@@ -410,13 +408,13 @@ def make_ColocalizationHistogramSelectionMenu(idFunc, coarseDict, midDict, fineD
                     options = coarseDict,
                     multi = True,
                 )],
-                style={'flex-grow':'1'},
+                style={'flexGrow':'1'},
             ),
             html.Div([
                 dbc.Button("All",id=idFunc('btn_allMajorDiff'))], 
             )],
             className='mt-1 mb-3', 
-            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+            style={'display':'flex','flexDirection':'row', 'columnGap':'5px'}
         ),
         html.H6(["Add ", html.B("mid-ontology"), " region(s):"],className='my-1'),
         dcc.Dropdown(
@@ -472,14 +470,14 @@ def make_GeneCorrSelectionMenu(idFunc, genesDf):
                     multi=False,
                     clearable=False,
                 )],
-                style={'flex-grow':'1'},
+                style={'flexGrow':'1'},
             ),
 
             html.Div([
                 dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info'))], 
             )],
             className='mt-1 mb-1', 
-            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+            style={'display':'flex','flexDirection':'row', 'columnGap':'5px'}
         ),
 
         html.Div([
@@ -499,7 +497,7 @@ def make_GeneCorrSelectionMenu(idFunc, genesDf):
         dcc.Dropdown(
             id=idFunc('drpD_metricSelector'),
             options = getMetricsForGenesLabels(),
-            value='wfa_energy', # Defaults to Isocortex
+            value='wfa_energy', # Defaults to PNN Energy
             multi = False,
             clearable=False,
             className='my-1 mb-3'
@@ -546,13 +544,13 @@ def make_AnatomicalExplorerSelectionMenu(idFunc, staining='wfa'):
                     multi = False,
                     clearable=False,
                 )],
-                style={'flex-grow':'1'},
+                style={'flexGrow':'1'},
             ),
             html.Div([
                 dbc.Button([html.I(className="fa-solid fa-info")],id=idFunc('btn_info_anat'))], 
             )],
             className='mt-1 mb-3', 
-            style={'display':'flex','flex-direction':'row', 'column-gap':'5px'}
+            style={'display':'flex','flexDirection':'row', 'columnGap':'5px'}
         ),
 
         html.H6(["Colormap:"],className='my-1'),
@@ -572,7 +570,6 @@ def make_AnatomicalExplorerSelectionMenu(idFunc, staining='wfa'):
 
         # TOOLTIPS
         dbc.Tooltip("Visualization colormap.", target=idFunc("drpD_anatomCmap")),
-        dbc.Tooltip("Set minimum and maximum values.", target=idFunc("slider_clims")),
     ])
     return menu
 
@@ -609,7 +606,7 @@ def make_CitationOffCanvas(idFunc):
                 ),
             ],
             style={"width": "18rem"},className='mt-5'),
-            make_CC_licenseBanner(idFunc),
+            make_CC_licenseBanner(idFunc, name='licenseBannerCite'),
         ]),
         
         id=idFunc("offCanv_cite"),
@@ -682,7 +679,7 @@ def make_MetricInfoModal(idFunc):
             html.P(html.I("'How many cells/PNNs are there?'")),
             html.Hr(className="mb-1"),
             html.P(["For each mouse, we calculate the ", html.B(["number of cells per mm",html.Sup(2)]), 
-                " In a brain region. " + 
+                " in a brain region. " + 
                 "This value is the cell density."],
                 className="card-text")]
         )],
@@ -696,7 +693,7 @@ def make_MetricInfoModal(idFunc):
             html.H5("Cell Intensity (A.U.)", className="card-title"),
             html.P(html.I("'How intense are the cells/PNNs here?'")),
             html.Hr(className="mb-1"),
-            html.P(["For each cell, we measure the average pixel intesity value (", html.I(["range: 0-1"]), ") of ",
+            html.P(["For each cell, we measure the average pixel intensity value (", html.I(["range: 0-1"]), ") of ",
                 "all pixels belonging to that cell.", html.Br(), "For each brain region, we compute the ",
                 "average of the intensity of all the cells in that region."],
                 className="card-text")],        
@@ -709,11 +706,11 @@ def make_MetricInfoModal(idFunc):
     energyCard = dbc.Card([
         dbc.CardBody([
             html.H5("Cell Energy (A.U.)", className="card-title"),
-            html.P(html.I("'What's the overall strenght of cells/PNNs here?'")),
+            html.P(html.I("'What's the overall strength of cells/PNNs here?'")),
             html.Hr(className="mb-1"),
             html.P(["Can be thought of as a measure of cell density, weighted by intensity. ",html.Br(),
                 "For each region, energy is defined as the sum of the cell intensity ",
-                "of all the cells in that region, divided by the total surface area ",
+                "of all the cells in that region, divided by the total surface area. ",
                 "Then, we normalize this value dividing it by the energy of the entire brain."],
                 className="card-text")]
         )],
@@ -747,10 +744,9 @@ def make_ColocInfoModal(idFunc):
             html.H5("PV-positive PNNs", className="card-title primary"),
             html.P(html.I("'What's the percentage of PNNs that surround a PV cell?'")),
             html.Hr(className="mb-1"),
-            html.P(["For each mouse, we calculate the ", html.B("average fluorescence"), 
-                " intensity across all the pixels belonging to a brain region. " + 
-                "Then, we normalize this value dividing it by the average fluorescence intensity " + 
-                "of the entire brain."],
+            html.P(["For each mouse and brain region, we count the PNNs that surround a ",
+                "PV-positive cell and express them as a ", html.B("percentage of all the PNNs"),
+                " in that region."],
                 className="card-text")]
         )],
         style={'height':'100%'},
@@ -760,12 +756,12 @@ def make_ColocInfoModal(idFunc):
 
     wfaPositivePvCard = dbc.Card([
         dbc.CardBody([
-            html.H5(["Cell Density (cells/mm", html.Sup(2) ,")"], className="card-title"),
-            html.P(html.I("'What's the percentage of PV cells that are surrounded by a PNN?''")),
+            html.H5("WFA-positive PV cells", className="card-title"),
+            html.P(html.I("'What's the percentage of PV cells that are surrounded by a PNN?'")),
             html.Hr(className="mb-1"),
-            html.P(["For each mouse, we calculate the ", html.B(["number of cells per mm",html.Sup(2)]), 
-                " In a brain region. " + 
-                "This value is the cell density."],
+            html.P(["For each mouse and brain region, we count the PV-positive cells that are ",
+                "surrounded by a PNN and express them as a ", html.B("percentage of all the PV cells"),
+                " in that region."],
                 className="card-text")]
         )],
         style={'height':'100%'},
@@ -816,9 +812,11 @@ def make_GeneInfoModal(idFunc):
 
     return modal
 
-def make_CC_licenseBanner(idFunc):
-    banner = []
-
+def make_CC_licenseBanner(idFunc, name='licenseBanner'):
+    """
+    Makes the license/credits banner. Pass a different name when the banner
+    appears more than once on the same page, so that component ids stay unique.
+    """
     banner = html.Div([
         html.Hr(className="mt-2 mb-2"),
         html.P(["Web-app developed by ",
@@ -838,10 +836,10 @@ def make_CC_licenseBanner(idFunc):
         html.A([
             html.Img([], alt="Creative Commons License",  
                 src="https://i.creativecommons.org/l/by/4.0/88x31.png")], 
-            rel="license", href="http://creativecommons.org/licenses/by/4.0/", className="border-width:0 me-2"),
+            rel="license", href="http://creativecommons.org/licenses/by/4.0/", className="me-2", style={"borderWidth": 0}),
         "This work is licensed under a ",
         html.A(["Creative Commons Attribution 4.0 International License"], rel='license', href="http://creativecommons.org/licenses/by/4.0/")
-    ], id=idFunc("licenseBanner"), className='pt-5')
+    ], id=idFunc(name), className='pt-5')
     return banner
 
 # ------------------------------------------------------------------------------
@@ -891,7 +889,7 @@ def getGenesLabels(genesDf):
 def getMetricsForGenesLabels():
     labels = [
         {'label':'PNN Energy','value':'wfa_energy'},
-        {'label':'WFA Diffuse Fluorescnece','value':'wfa_diffuseFluo'},
+        {'label':'WFA Diffuse Fluorescence','value':'wfa_diffuseFluo'},
         {'label':'PV Energy','value':'pv_energy'},
     ]
     return labels

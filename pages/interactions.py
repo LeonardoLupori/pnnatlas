@@ -26,13 +26,10 @@ structuresDf = cf.loadStructuresDf(dataFolder/'structures.json')
 # Load the necessary data
 # ------------------------------------------------------------------------------
 
-# Metrics data for WFA
+# Metrics data for WFA, PV and their colocalization
 Dw = dm.readSupplDataMetrics(dataFolder/'originalData/data_SD1.xlsx', removeAcronyms=True)
 Dp = dm.readSupplDataMetrics(dataFolder/'originalData/data_SD2.xlsx', removeAcronyms=True)
 Dc = dm.readSupplDataMetrics(dataFolder/'originalData/data_SD3.xlsx', removeAcronyms=True)
-
-# Coronal Slice Coordinates
-coronalCoordDfList = cf.loadAllSlices(dataFolder/'coordinates')
 
 # ------------------------------------------------------------------------------
 # Perform some preprocessing
@@ -91,7 +88,7 @@ layout = dbc.Container([
     dbc.Row([lf.make_CC_licenseBanner(id)]),
 
 
-    dbc.Row([],style={"margin-top": "500px"}),
+    dbc.Row([],style={"marginTop": "500px"}),
 ])
 
 

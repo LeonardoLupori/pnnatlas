@@ -1,4 +1,5 @@
-from dash import dcc, html, Input, Output, callback
+from dash import html, Input, Output, callback
+from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
 
@@ -33,6 +34,11 @@ layout = html.Div([
     Input(component_id='btn_backToWfa', component_property='n_clicks'),
     prevent_initial_call=True
 )
-def invertTabVisibility( _ ):
+def goBackToWfa(n_clicks):
+    # prevent_initial_call alone is not enough here: the output ('url') lives in the
+    # outer layout, so Dash still fires this callback when the 404 page is inserted,
+    # which silently rewrote the URL to /wfa while the 404 page stayed on screen.
+    if not n_clicks:
+        raise PreventUpdate
     return '/wfa'
 

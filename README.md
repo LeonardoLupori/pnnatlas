@@ -17,3 +17,14 @@ Follow the steps on this [tutorial page](docs/01_installation.md) to install the
 - Python >= 3.11 (tested with Python 3.12)
 - All the required packages, with tested versions, are listed in [requirements.txt](requirements.txt):  
 `pip install -r requirements.txt`
+
+### Running
+
+The repository is a Python package, so run everything from the folder that *contains*
+`pnnatlas/` (keep the repository folder named `pnnatlas`).
+
+- Development server:  
+`python -m pnnatlas`
+- Production (WSGI): point your WSGI server at `pnnatlas:server`, e.g. with gunicorn:  
+`gunicorn pnnatlas:server`  
+  (`pnnatlas.pnnatlas:server` works too: both refer to the same app.)

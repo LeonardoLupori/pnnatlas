@@ -27,7 +27,7 @@ structuresDf = cf.loadStructuresDf(dataFolder/'structures.json')
 # Load the necessary data
 # ------------------------------------------------------------------------------
 
-# Metrics data for WFA
+# Metrics data for PV
 D = dm.readSupplDataMetrics(dataFolder/'originalData/data_SD2.xlsx', removeAcronyms=True)
 
 # Coronal Slice Coordinates
@@ -87,7 +87,7 @@ layout = dbc.Container([
     dbc.Row([lf.make_CollapsableTable(id)]),
     dbc.Row([lf.make_CC_licenseBanner(id)]),
 
-    dbc.Row([],style={"margin-top": "500px"}),
+    dbc.Row([],style={"marginTop": "500px"}),
 ])
 
 
@@ -144,10 +144,10 @@ def updateAnatomicalExplorer(fig, selMetric, cmap, apIdx):
     # Select which dataset to show
     data = D['mid'].xs(selMetric, axis=1, level='params')
     # Get the correct limits to the colormap
-    min, max, = cf.getClimsAnatomicalExplorer(selMetric, staining='pv')
+    vmin, vmax = cf.getClimsAnatomicalExplorer(selMetric, staining='pv')
 
     df = cf.mergeCoordinatesAndData(coronalCoordDfList[apIdx], data)
-    fig = cf.redrawAnatExplorerScatter(fig, df, cmap, min, max)
+    fig = cf.redrawAnatExplorerScatter(fig, df, cmap, vmin, vmax)
 
     return fig
 

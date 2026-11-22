@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import pandas as pd
 
 
@@ -5,21 +7,26 @@ import pandas as pd
 # READ AND PARSE SUPPLEMENTARY DATA
 ################################################################################
 
+@lru_cache(maxsize=None)
 def readSupplDataMetrics(pathToFile:str, removeAcronyms:bool=False):
     """
     Parse Excel files from the supplementary data with WFA or PV staining metrics
-    to dataframes and return a dictionary of thre different dataframes
+    to dataframes and return a dictionary of three different dataframes.
+
+    The result is cached, so pages that load the same file share the same
+    dataframes: callers must not modify them in place.
 
     PARAMETERS
     ********************
     pathToFile:str full path to the excel file to load
+    removeAcronyms:bool if True, drop the acronym levels from the row index
 
     RETURNS
     ********************
-    dfDict:dict a dictionary of dataframes {dfCoarse, dfMid, dfFine}
+    dfDict:dict a dictionary of dataframes {"coarse", "mid", "fine"}
     """
 
-    # Read the corase, single animal data
+    # Read the coarse, single animal data
     dfCoarse = pd.read_excel(
         pathToFile,
         sheet_name=0,
@@ -52,7 +59,7 @@ def readSupplDataMetrics(pathToFile:str, removeAcronyms:bool=False):
 
 
 def readMetricsDataForGenes(pathToFile:str):
-    # Read the medium redolution data (average across mice)
+    # Read the medium resolution data (average across mice)
     metricDf = pd.read_excel(
         pathToFile,
         sheet_name=3,
