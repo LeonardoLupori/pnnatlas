@@ -10,8 +10,6 @@ you can also run it locally on your computer so that you can access it even offl
 
 Follow the steps on this [tutorial page](docs/01_installation.md) to install the necessary components and run your own atlas.
 
-## Installation on a server
-
 ### Requirements
 
 - Python >= 3.11 (tested with Python 3.12)
@@ -20,11 +18,11 @@ Follow the steps on this [tutorial page](docs/01_installation.md) to install the
 
 ### Running
 
-The repository is a Python package, so run everything from the folder that *contains*
-`pnnatlas/` (keep the repository folder named `pnnatlas`).
+The repository is a Python package: keep the repository folder named `pnnatlas` and run the
+atlas from the folder that *contains* it:
 
-- Development server:  
-`python -m pnnatlas`
-- Production (WSGI): point your WSGI server at `pnnatlas:server`, e.g. with gunicorn:  
-`gunicorn pnnatlas:server`  
-  (`pnnatlas.pnnatlas:server` works too: both refer to the same app.)
+```
+python -m pnnatlas
+```
+
+Then open the address printed in the terminal (usually http://127.0.0.1:8050/) in your browser.
